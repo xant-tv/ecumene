@@ -127,3 +127,7 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# pycord
+# remove this once py-cord releases onto pypi and update pipfile
+pycord/

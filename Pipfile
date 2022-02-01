@@ -1,0 +1,16 @@
+[[source]]
+url = "https://pypi.python.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+requests = "*"
+python-dotenv = "*"
+py-cord = {path = "./pycord"}
+pyyaml = "*"
+
+[dev-packages]
+pytest = "*"
+
+[pipenv]
+allow_prereleases = true
