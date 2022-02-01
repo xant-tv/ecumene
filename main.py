@@ -30,8 +30,8 @@ if __name__ == '__main__':
         await ecumene.events.register(ctx)
 
     @ecumene.client.slash_command(name='choose', description="Wise one, make the choice for me.", guild_ids=guild_ids)
-    async def choose(ctx, *choices):
-        await ecumene.events.choose(ctx, *choices)
+    async def choose(ctx, choices):
+        await ecumene.events.choose(ctx, *choices.split(' '))
 
     @ecumene.client.slash_command(name='bungo', description="Test interaction with the Bungo API.", guild_ids=guild_ids)
     async def bungo(ctx, clan):
