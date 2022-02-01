@@ -7,7 +7,7 @@ import bot.client
 
 if __name__ == '__main__':
     
-    # Initialise basic logging (for now).
+    # Initialise logging.
     fpath = os.path.join('conf', 'log.yml')
     with open(fpath, 'r') as cfile:
         cfg = yaml.load(cfile, Loader=yaml.FullLoader)
