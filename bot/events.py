@@ -24,3 +24,6 @@ class EcumeneEventHandler():
         clan = self.bnet.find_clan_by_name(clan)
         msg = util.format.format_as_code_block(clan, 'json')
         await ctx.respond(msg)
+
+    async def admin(self, ctx):
+        await ctx.respond("This information is top-secret.")

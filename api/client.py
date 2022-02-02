@@ -43,7 +43,7 @@ class BungieInterface():
         return body.get('Response')
 
     def find_clan_by_name(self, clan_name):
-        self.log.info(f'Searching for clans matching "{clan_name}".')
+        self.log.info(f'Searching for clans matching "{clan_name}"')
         url = self._get_url_('GroupV2', 'Search')
         headers = self._get_headers_()
         data = {

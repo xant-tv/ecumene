@@ -25,16 +25,41 @@ if __name__ == '__main__':
     # Create instance of Ecumene and attach functions.
     ecumene = bot.client.Ecumene()
 
-    @ecumene.client.slash_command(name='register', description="Begin negotiations with Ecumene.", guild_ids=guild_ids)
+    @ecumene.client.slash_command(
+        name='register', 
+        description="Begin negotiations with Ecumene.", 
+        guild_ids=guild_ids
+    )
     async def register(ctx):
         await ecumene.events.register(ctx)
 
-    @ecumene.client.slash_command(name='choose', description="Wise one, make the choice for me.", guild_ids=guild_ids)
+    @ecumene.client.slash_command(
+        name='choose', 
+        description="Wise one, make the choice for me.", 
+        guild_ids=guild_ids
+    )
     async def choose(ctx, choices):
         await ecumene.events.choose(ctx, *choices.split(' '))
 
-    @ecumene.client.slash_command(name='bungo', description="Test interaction with the Bungo API.", guild_ids=guild_ids)
+    @ecumene.client.slash_command(
+        name='bungo', 
+        description="Test interaction with the Bungo API.", 
+        guild_ids=guild_ids
+    )
     async def bungo(ctx, clan):
         await ecumene.events.bungo(ctx, clan)
+
+    @ecumene.client.slash_command(
+        name='admin', 
+        description="This is a top-secret communication.", 
+        guild_ids=guild_ids
+    )
+    @ecumene.checks.is_guild_owner()
+    async def admin(ctx):
+        await ecumene.events.admin(ctx)
+
+    @admin.error
+    async def admin_error(ctx, error):
+        await ecumene.errors.admin(ctx, error)
 
     ecumene.run()

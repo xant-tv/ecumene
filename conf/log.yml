@@ -22,6 +22,14 @@ loggers:
     level: INFO
     handlers: [console]
     propagate: no
+  bot.checks.EcumeneCheckHandler:
+    level: INFO
+    handlers: [console]
+    propagate: no
+  bot.errors.EcumeneErrorHandler:
+    level: INFO
+    handlers: [console]
+    propagate: no
   api.client.BungieInterface:
     level: INFO
     handlers: [console]

@@ -3,6 +3,8 @@ import discord
 import logging
 
 import bot.events
+import bot.checks
+import bot.errors
 
 class Ecumene():
 
@@ -11,6 +13,8 @@ class Ecumene():
         self.client = discord.Bot()
         self.token = os.getenv('DISCORD_TOKEN')
         self.events = bot.events.EcumeneEventHandler()
+        self.checks = bot.checks.EcumeneCheckHandler()
+        self.errors = bot.errors.EcumeneErrorHandler()
 
         self.client.add_listener(
             self.ready, 
