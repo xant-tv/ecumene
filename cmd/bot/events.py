@@ -1,14 +1,14 @@
 import random
 import logging
 
-import api.client
-import util.format
+from api.client import BungieInterface
+from util.format import format_as_code_block
 
 class EcumeneEventHandler():
 
     def __init__(self):
         self.log = logging.getLogger(f'{self.__module__}.{self.__class__.__name__}')
-        self.bnet = api.client.BungieInterface()
+        self.bnet = BungieInterface()
 
     async def register(self, ctx):
         """Register with Ecumene leadership."""
@@ -22,7 +22,7 @@ class EcumeneEventHandler():
     async def bungo(self, ctx, clan):
         """Ping the Bungie API to get some basic data."""
         clan = self.bnet.find_clan_by_name(clan)
-        msg = util.format.format_as_code_block(clan, 'json')
+        msg = format_as_code_block(clan, 'json')
         await ctx.respond(msg)
 
     async def admin(self, ctx):

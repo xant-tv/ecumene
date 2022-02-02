@@ -3,7 +3,7 @@ import yaml
 import dotenv
 import logging.config
 
-import bot.client
+from bot.client import Ecumene
 
 if __name__ == '__main__':
     
@@ -23,7 +23,7 @@ if __name__ == '__main__':
         guild_ids = [int(guild)]
 
     # Create instance of Ecumene and attach functions.
-    ecumene = bot.client.Ecumene()
+    ecumene = Ecumene()
 
     @ecumene.client.slash_command(
         name='register', 
