@@ -10,7 +10,9 @@ class Ecumene():
 
     def __init__(self):
         self.log = logging.getLogger(f'{self.__module__}.{self.__class__.__name__}')
-        self.client = discord.Bot()
+        self.client = discord.Bot(
+            allowed_mentions=discord.AllowedMentions.all() # Can mention all the things!
+        )
         self.token = os.getenv('DISCORD_TOKEN')
         self.events = EcumeneEventHandler()
         self.checks = EcumeneCheckHandler()

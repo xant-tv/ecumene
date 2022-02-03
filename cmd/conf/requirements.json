@@ -1,0 +1,40 @@
+{
+    "requirements": {
+        "raid": [
+            {
+                "name": "Petra's Run",
+                "id": 380332968
+            },
+            {
+                "name": "Inherent Perfection",
+                "id": 1522774125
+            },
+            {
+                "name": "Survival of the Fittest",
+                "id": 3560923614
+            },
+            {
+                "name": "Flawless Vault of Glass",
+                "id": 2750088202
+            }
+        ],
+        "dungeon": [
+            {
+                "name": "Grasp of Avarice Solo Flawless",
+                "id": 3718971745
+            },
+            {
+                "name": "Prophecy Dungeon Solo Flawless",
+                "id": 3191784400
+            },
+            {
+                "name": "Seriously, Never Again",
+                "id": 3205009787
+            },
+            {
+                "name": "Savior of the Deep",
+                "id": 3950599483
+            }
+        ]
+    }
+}

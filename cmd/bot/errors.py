@@ -12,3 +12,8 @@ class EcumeneErrorHandler():
         self.log.info(error)
         if isinstance(error, CheckFailure):
             await ctx.respond('Insufficient privileges to receive this transmission.')
+
+    async def flawless(self, ctx, error):
+        self.log.info(error)
+        if isinstance(error, CheckFailure):
+            await ctx.respond("You're not good enough to run this command. Git gud, scrub.", ephemeral=True)

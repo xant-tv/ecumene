@@ -1,7 +1,10 @@
 import os
 import yaml
 import dotenv
-import logging.config
+import discord
+
+from distutils.util import strtobool
+from logging.config import dictConfig
 
 from bot.client import Ecumene
 
@@ -11,7 +14,7 @@ if __name__ == '__main__':
     fpath = os.path.join('conf', 'log.yml')
     with open(fpath, 'r') as cfile:
         cfg = yaml.load(cfile, Loader=yaml.FullLoader)
-    logging.config.dictConfig(cfg)
+    dictConfig(cfg)
 
     # Load variables from local .env file.
     dotenv.load_dotenv()
@@ -61,5 +64,42 @@ if __name__ == '__main__':
     @admin.error
     async def admin_error(ctx, error):
         await ecumene.errors.admin(ctx, error)
+
+    @ecumene.client.slash_command(
+        name='flawless', 
+        description="I'm better than you.",
+        options=[
+            discord.Option(str, name='activity', description="Activity that I'm better than you at.", choices=['Raid', 'Dungeon']),
+            discord.Option(discord.Member, description='Identify yourself.', name='user'),
+            discord.Option(str, name='meme', description='Memes are always better.', choices=['Yes', 'No'], required=False)
+        ],
+        guild_ids=guild_ids
+    )
+    @ecumene.checks.user_has_role_permission()
+    async def flawless(ctx, activity: str, user: discord.Member, meme: str):
+        await ecumene.events.flawless(ctx, user, activity.lower())
+
+    @flawless.error
+    async def flawless_error(ctx, error):
+        await ecumene.errors.flawless(ctx, error)
+
+    @ecumene.client.slash_command(
+        name='colour',
+        description='You made this? I made this! 😀',
+        options=[
+            discord.Option(str, name='limit', description="Do you limit interactions?", choices=['Yes', 'No']),
+        ],
+        guild_ids=guild_ids, 
+    )
+    async def colour(ctx, limit):
+        await ecumene.events.colour(ctx, strtobool(limit.lower()))
+
+    @ecumene.client.slash_command(
+        name='ping',
+        description='You have a red dot now.',
+        guild_ids=guild_ids, 
+    )
+    async def ping(ctx):
+        await ecumene.events.ping(ctx)
 
     ecumene.run()
