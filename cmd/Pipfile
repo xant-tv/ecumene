@@ -6,8 +6,8 @@ name = "pypi"
 [packages]
 requests = "*"
 python-dotenv = "*"
-py-cord = {path = "./pycord"}
 pyyaml = "*"
+py-cord = "*"
 
 [dev-packages]
 pytest = "*"

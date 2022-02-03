@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "5608b22619804bdb5ed2ba4205f0ef3e3b4ed8b39d893aec6684ee60d1b82c9a"
+            "sha256": "459dc507a33c983d8266566ebbb9c71a7700ba0cd422135a0fc17a107603b475"
         },
         "pipfile-spec": 6,
         "requires": {},
@@ -128,7 +128,7 @@
                 "sha256:2842d8f5e82a1f6aa437380934d5e1cd4fcf2003b06fed6940769c164a480a45",
                 "sha256:98398a9d69ee80548c762ba991a4728bfc3836768ed226b3945908d1a688371c"
             ],
-            "markers": "python_full_version >= '3.5.0'",
+            "markers": "python_version >= '3'",
             "version": "==2.0.11"
         },
         "frozenlist": {
@@ -270,8 +270,12 @@
             "version": "==6.0.2"
         },
         "py-cord": {
-            "path": "./pycord",
-            "version": "==2.0.0b4884+g68e9cf3d"
+            "hashes": [
+                "sha256:024cc9abd8e74075ec5b272abc32e6d85be5903f54a04709a3c902dce781c0f2",
+                "sha256:f0e30686635c4672c80f6f8514ac570e61e2ef8a8e49dd85e36e0c002b14e89b"
+            ],
+            "index": "pypi",
+            "version": "==2.0.0b1"
         },
         "python-dotenv": {
             "hashes": [

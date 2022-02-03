@@ -22,9 +22,6 @@ DISCORD_GUILD_ID=<dev_server_id> # Should be removed in production.
 ```
 Note that Discord rolls out updates to application commands with up to an hour delay. However, guild-specific commands are updated immediately. Setting the `DISCORD_GUILD_ID` to a specific server will allow rapid testing of the application slash commands. However, this variable should be left empty when deployed.
 
-The dependency on `py-cord` requires local install within `pipenv` from the source until the package is finally released on pypi (hopefully soon).
-
-```
-git clone https://github.com/Pycord-Development/pycord
-pipenv sync
-```
+## Requirements
+ - `py-cord 2.0.0+` (still in pre-release)
+ - `flask`
