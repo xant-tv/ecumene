@@ -1,0 +1,162 @@
+{
+    "models": {
+        "tables": [
+            {
+                "name": "transactions",
+                "columns": [
+                    {
+                        "name": "state",
+                        "type": "string",
+                        "size": 100,
+                        "primary_key": 1
+                    },
+                    {
+                        "name": "requested_at",
+                        "type": "bigint"
+                    },
+                    {
+                        "name": "discord_id",
+                        "type": "bigint"
+                    },
+                    {
+                        "name": "req_display_name",
+                        "type": "string",
+                        "size": 60
+                    },
+                    {
+                        "name": "code",
+                        "type": "string",
+                        "size": 100
+                    }
+                ],
+                "constraints": [
+                    {
+                        "name": "is_code_unique",
+                        "type": "unique",
+                        "columns": [
+                            "code"
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "members",
+                "columns": [
+                    {
+                        "name": "discord_id",
+                        "type": "bigint"
+                    },
+                    {
+                        "name": "destiny_id",
+                        "type": "string",
+                        "size": 100
+                    },
+                    {
+                        "name": "destiny_mtype",
+                        "type": "int"
+                    },
+                    {
+                        "name": "bnet_id",
+                        "type": "string",
+                        "size": 30
+                    },
+                    {
+                        "name": "bnet_mtype",
+                        "type": "int"
+                    }
+                ],
+                "constraints": [
+                    {
+                        "name": "is_discord_id_unique",
+                        "type": "unique",
+                        "columns": [
+                            "discord_id"
+                        ]
+                    },
+                    {
+                        "name": "is_destiny_id_unique",
+                        "type": "unique",
+                        "columns": [
+                            "destiny_id"
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "admins",
+                "columns": [
+                    {
+                        "name": "admin_id",
+                        "type": "string",
+                        "size": 100,
+                        "primary_key": 1
+                    },
+                    {
+                        "name": "admin_mtype",
+                        "type": "int"
+                    },
+                    {
+                        "name": "access_token",
+                        "type": "text"
+                    },
+                    {
+                        "name": "access_expires_at",
+                        "type": "bigint"
+                    },
+                    {
+                        "name": "refresh_token",
+                        "type": "text"
+                    },
+                    {
+                        "name": "refresh_expires_at",
+                        "type": "bigint"
+                    }
+                ]
+            },
+            {
+                "name": "clans",
+                "columns": [
+                    {
+                        "name": "guild_id",
+                        "type": "bigint"
+                    },
+                    {
+                        "name": "clan_id",
+                        "type": "bigint"
+                    },
+                    {
+                        "name": "clan_name",
+                        "type": "string",
+                        "size": 200
+                    },
+                    {
+                        "name": "admin_id",
+                        "type": "string",
+                        "size": 100
+                    }
+                ],
+                "constraints": [
+                    {
+                        "name": "is_clan_unique_in_guild",
+                        "type": "unique",
+                        "columns": [
+                            "guild_id",
+                            "clan_id"
+                        ]
+                    },
+                    {
+                        "name": "admin_id_fk",
+                        "type": "foreign",
+                        "columns": [
+                            "admin_id"
+                        ],
+                        "reftable": "admins",
+                        "refcolumns": [
+                            "admin_id"
+                        ]
+                    }
+                ]
+            }
+        ] 
+    }
+}

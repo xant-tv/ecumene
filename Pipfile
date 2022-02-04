@@ -8,6 +8,8 @@ requests = "*"
 python-dotenv = "*"
 pyyaml = "*"
 py-cord = "*"
+flask = "*"
+sqlalchemy = {extras = ["oracle"], version = "*"}
 
 [dev-packages]
 pytest = "*"

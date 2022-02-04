@@ -2,11 +2,11 @@ import os
 import discord
 import logging
 
-from bot.events import EcumeneEventHandler
-from bot.checks import EcumeneCheckHandler
-from bot.errors import EcumeneErrorHandler
+from bot.core.events import EcumeneEventHandler
+from bot.core.checks import EcumeneCheckHandler
+from bot.core.errors import EcumeneErrorHandler
 
-class Ecumene():
+class EcumeneBot():
 
     def __init__(self):
         self.log = logging.getLogger(f'{self.__module__}.{self.__class__.__name__}')

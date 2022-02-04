@@ -1,3 +1,4 @@
+import logging
 import discord
 
 # Defines a custom Select containing colour options
@@ -6,6 +7,7 @@ import discord
 class EcumeneDropdown(discord.ui.Select):
 
     def __init__(self, options, limit=False):
+        self.log = logging.getLogger(f'{self.__module__}.{self.__class__.__name__}')
 
         # The placeholder is what will be shown when no option is chosen
         # The min and max values indicate we can only pick one of the three options

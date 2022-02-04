@@ -20,3 +20,7 @@ def get_roles_permitted(command):
         if command in role.get('permissions'):
             permitted.append(role.get('id'))
     return permitted
+
+def get_models():
+    models = load_local('models').get('models')
+    return models

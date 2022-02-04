@@ -2,31 +2,48 @@ import random
 import logging
 import discord
 
-from bot.interactions import EcumeneView, EcumeneDropdown
-from api.client import BungieInterface
+from bot.core.interactions import EcumeneView, EcumeneDropdown
+from bnet.client import BungieInterface
+from db.client import DatabaseService
 from util.local import get_user
 from util.format import format_as_code_block
+from util.encrypt import generate_state
+from util.time import get_current_time
 
 class EcumeneEventHandler():
 
     def __init__(self):
         self.log = logging.getLogger(f'{self.__module__}.{self.__class__.__name__}')
         self.bnet = BungieInterface()
+        self.db = DatabaseService()
 
     async def register(self, ctx):
         """Register with Ecumene leadership."""
-        await ctx.author.send("Your interest has been noted. Instructions will follow.")
+        # Capture message information and generate a state.
+        state = generate_state()
+        data = {
+            'state': state,
+            'discord_id': ctx.author.id,
+            'req_display_name': f'{ctx.author}',
+            'requested_at': get_current_time()
+        }
+        
+        # Insert this data into the store.
+        self.db.insert('transactions', data)
+
+        # Use state to produce an authorisation URL.
+        url = self.bnet.get_authorisation_url(state)
+
+        # Generate a message embed.
+        embed = discord.Embed(
+            title='Ecumene Registration',
+            url=url,
+            description=f"Your interest has been noted. Please click the link and follow instructions."
+        )
+
+        # Respond to the initial command.
+        await ctx.author.send(embed=embed)
         await ctx.respond("Negotiations have begun. Enact impulse.")
-
-    async def choose(self, ctx, *choices: str):
-        """Chooses between multiple choices."""
-        await ctx.respond(random.choice(choices))
-
-    async def bungo(self, ctx, clan):
-        """Ping the Bungie API to get some basic data."""
-        clan = self.bnet.find_clan_by_name(clan)
-        msg = format_as_code_block(clan, 'json')
-        await ctx.respond(msg)
 
     async def admin(self, ctx):
         await ctx.respond("This information is top-secret.")
