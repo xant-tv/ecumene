@@ -18,20 +18,20 @@ ENV PATH="/.venv/bin:$PATH"
 # Install orcale runtime deps
 # https://cx-oracle.readthedocs.io/en/latest/user_guide/installation.html
 # https://download.oracle.com/otn_software/linux/instantclient/215000/instantclient-basic-linux.x64-21.5.0.0.0dbru.zip
-ENV ORACLE_BASE=/opt/oracle
-ENV ORACLE_HOME=$ORACLE_BASE/instantclient_21_5
+ENV ORA_BASE=/opt/oracle
+ENV ORA_HOME=$ORA_BASE/instantclient_21_5
 
 RUN apt-get update && apt-get install -y --no-install-recommends wget unzip libaio1
 
 RUN wget -O oracleinstantclient.zip https://download.oracle.com/otn_software/linux/instantclient/215000/instantclient-basic-linux.x64-21.5.0.0.0dbru.zip
-RUN mkdir -p $ORACLE_BASE
-RUN unzip oracleinstantclient.zip -d $ORACLE_BASE
-RUN echo $ORACLE_HOME > /etc/ld.so.conf.d/oracle-instantclient.conf
-RUN ldconfig
+RUN mkdir -p $ORA_BASE
+RUN mkdir -p $ORA_HOME/lib
+RUN unzip oracleinstantclient.zip -d $ORA_BASE
+#RUN export LD_LIBRARY_PATH=$ORA_HOME:$LD_LIBRARY_PATH
+#RUN echo $ORA_HOME > /etc/ld.so.conf.d/oracle-instantclient.conf
+#RUN ldconfig
 
-RUN useradd --create-home appuser
-WORKDIR /home/appuser
-USER appuser
+WORKDIR /bin/app
 
 COPY . .
 
