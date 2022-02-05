@@ -1,0 +1,12 @@
+# Ignore everything
+**
+
+# ... except for dependencies and source
+!Pipfile
+!Pipfile.lock
+!bnet/
+!conf/
+!db/
+!util/
+!web/
+!main.py

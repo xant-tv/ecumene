@@ -1,0 +1,27 @@
+FROM python:3.8-slim-buster as builder
+
+FROM builder AS python-deps
+
+# Install pipenv
+RUN pip install pipenv
+
+# Install python dependencies in /.venv
+COPY Pipfile .
+COPY Pipfile.lock .
+RUN PIPENV_VENV_IN_PROJECT=1 pipenv install --deploy
+
+# TODO: remove this (it's useful for viewing all deps in pipenv for debug)
+RUN pipenv graph
+
+FROM builder AS runtime
+
+COPY --from=python-deps /.venv /.venv
+ENV PATH="/.venv/bin:$PATH"
+
+RUN useradd --create-home appuser
+WORKDIR /home/appuser
+USER appuser
+
+COPY . .
+
+ENTRYPOINT ["python", "main.py", "web"]
