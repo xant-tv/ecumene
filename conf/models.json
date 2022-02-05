@@ -16,7 +16,18 @@
                     },
                     {
                         "name": "discord_id",
-                        "type": "bigint"
+                        "type": "string",
+                        "size": 100
+                    },
+                    {
+                        "name": "channel_id",
+                        "type": "string",
+                        "size": 100
+                    },
+                    {
+                        "name": "message_id",
+                        "type": "string",
+                        "size": 100
                     },
                     {
                         "name": "req_display_name",
@@ -44,7 +55,8 @@
                 "columns": [
                     {
                         "name": "discord_id",
-                        "type": "bigint"
+                        "type": "string",
+                        "size": 100
                     },
                     {
                         "name": "destiny_id",
@@ -63,6 +75,10 @@
                     {
                         "name": "bnet_mtype",
                         "type": "int"
+                    },
+                    {
+                        "name": "registered_on",
+                        "type": "bigint"
                     }
                 ],
                 "constraints": [
@@ -97,7 +113,8 @@
                     },
                     {
                         "name": "access_token",
-                        "type": "text"
+                        "type": "string",
+                        "size": 2000
                     },
                     {
                         "name": "access_expires_at",
@@ -105,7 +122,8 @@
                     },
                     {
                         "name": "refresh_token",
-                        "type": "text"
+                        "type": "string",
+                        "size": 2000
                     },
                     {
                         "name": "refresh_expires_at",
@@ -118,16 +136,18 @@
                 "columns": [
                     {
                         "name": "guild_id",
-                        "type": "bigint"
+                        "type": "string",
+                        "size": 100
                     },
                     {
                         "name": "clan_id",
-                        "type": "bigint"
+                        "type": "string",
+                        "size": 100
                     },
                     {
                         "name": "clan_name",
                         "type": "string",
-                        "size": 200
+                        "size": 400
                     },
                     {
                         "name": "admin_id",

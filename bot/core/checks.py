@@ -1,4 +1,3 @@
-import inspect
 import logging
 
 from discord.ext import commands

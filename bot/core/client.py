@@ -7,6 +7,10 @@ from bot.core.checks import EcumeneCheckHandler
 from bot.core.errors import EcumeneErrorHandler
 
 class EcumeneBot():
+    """
+    Bot client that should be used for primary Discord functionality.
+    Will hold focus until terminated.
+    """
 
     def __init__(self):
         self.log = logging.getLogger(f'{self.__module__}.{self.__class__.__name__}')
