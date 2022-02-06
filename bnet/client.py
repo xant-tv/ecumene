@@ -100,22 +100,3 @@ class BungieInterface():
         profiles = self._strip_outer_(response).get('profiles')
         # Only return first profile (should only be one)
         return profiles[0]
-
-    def is_flawless(self, membership_id, membership_type, activity):
-        with open('conf/requirements.json') as fpath:
-            reqs = json.load(fpath).get('requirements').get(activity)
-            req_ids = [req['id'] for req in reqs]
-        url = self._get_url_('Destiny2', membership_type, 'Profile', membership_id)
-        headers = self._get_headers_()
-        data = {
-            'components': 900
-        }
-        body = self._execute_(requests.get, url, headers=headers, params=data)
-        recs = self._strip_outer_(body).get('profileRecords').get('data').get('records')
-        completed = list()
-        for req_id in req_ids:
-            if recs[str(req_id)]['objectives'][0]['complete']:
-                completed.append(req_id)
-        if completed == req_ids:
-            return True
-        return False
