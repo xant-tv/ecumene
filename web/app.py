@@ -1,4 +1,4 @@
-from flask import request, render_template
+from flask import request, render_template, send_from_directory
 from werkzeug.exceptions import HTTPException
 
 from web.core.client import EcumeneWeb
@@ -17,20 +17,20 @@ ecumene = EcumeneWeb()
 
 @ecumene.client.errorhandler(500)
 def server_error(error):
-    return render_template('failure.html'), 500
+    return render_template('view/failure.html'), 500
 
 @ecumene.client.errorhandler(404)
 def page_not_found(error):
-    return render_template('failure.html'), 404
+    return render_template('view/failure.html'), 404
 
 @ecumene.client.route("/login", methods=['GET'])
 def login():
     ecumene.routes.capture_login(request)
-    return render_template('success.html')
+    return render_template('view/success.html')
 
 @ecumene.client.route("/", methods=['GET'])
 def index():
-    return render_template('index.html')
+    return render_template('view/index.html')
 
 @ecumene.client.after_request
 def after_request(response):

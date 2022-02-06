@@ -8,11 +8,9 @@ def load_local(loc):
         data = json.load(locfile)
     return data
 
-def get_user(id, source):
-    members = load_local('members').get('members')
-    for member in members:
-        if member.get(source).get('id') == id:
-            return member
+def get_models():
+    models = load_local('models').get('models')
+    return models
 
 def get_roles_permitted(parent, command):
     roles = load_local('roles').get('roles')
@@ -26,10 +24,6 @@ def get_roles_permitted(parent, command):
         elif command_permission in role.get('permissions'):
             permitted.append(role.get('id'))
     return permitted
-
-def get_models():
-    models = load_local('models').get('models')
-    return models
 
 def get_guild_ids():
     # This will force commands to be scoped within the specified guild.

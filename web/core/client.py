@@ -22,7 +22,9 @@ class EcumeneWeb():
         self.log = logging.getLogger(f'{self.__module__}.{self.__class__.__name__}')
         self.client = flask.Flask(
             __name__, 
-            template_folder='../view' # This is relative to the path of _this_ file.
+            template_folder='../templates', # This is relative to the path of _this_ file.
+            static_url_path='/static', # Serve images from "/static" paths.
+            static_folder='../static' # Again, relative to this file.
         )
         self.port = os.getenv('WEB_PORT', 8080)
         self.routes = EcumeneRouteHandler()
