@@ -1,6 +1,5 @@
 import os
 import logging
-# import cx_Oracle
 
 from sqlalchemy import MetaData, Table, Column
 from sqlalchemy import Integer, String, Text, Float
@@ -36,7 +35,6 @@ class DatabaseService():
         self.models = self._build_models_from_json_(self._models)
 
         # Store engine.
-        # cx_Oracle.init_oracle_client(lib_dir=os.getenv('ORA_HOME'))
         self.engine = create_engine(f"oracle+cx_oracle://{self.user}:{self.password}@{self.sid}")  
         self.log.info(f'Connected as {self.user}@{self.sid}')
         if enforce_schema:
