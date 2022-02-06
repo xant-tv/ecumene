@@ -2,9 +2,9 @@ import os
 import discord
 import logging
 
-from bot.core.events import EcumeneEventHandler
-from bot.core.checks import EcumeneCheckHandler
-from bot.core.errors import EcumeneErrorHandler
+from bot.core.cogs.admin import Admin
+from bot.core.cogs.identity import Identity
+from bot.core.cogs.example import Example
 
 class EcumeneBot():
     """
@@ -18,10 +18,13 @@ class EcumeneBot():
             allowed_mentions=discord.AllowedMentions.all() # Can mention all the things!
         )
         self.token = os.getenv('DISCORD_TOKEN')
-        self.events = EcumeneEventHandler()
-        self.checks = EcumeneCheckHandler()
-        self.errors = EcumeneErrorHandler()
 
+        # Add all commands to bot via their respective Cogs.
+        self.client.add_cog(Identity(self.log))
+        self.client.add_cog(Admin(self.log))
+        self.client.add_cog(Example(self.log))
+
+        # Add our on-ready event listener.
         self.client.add_listener(
             self.ready, 
             'on_ready'

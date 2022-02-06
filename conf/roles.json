@@ -3,8 +3,7 @@
         {
             "id": 938771453636141087,
             "permissions": [
-                "flawless",
-                "clan"
+                "admin.*"
             ]
         }
     ]
