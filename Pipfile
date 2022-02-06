@@ -9,7 +9,7 @@ python-dotenv = "0.19.2"
 pyyaml = "6.0"
 py-cord = "*"
 flask = "2.0.2"
-cx_Oracle = "8.3.0"
+cx-Oracle = "8.3.0"
 sqlalchemy = "1.4.31"
 
 [dev-packages]
