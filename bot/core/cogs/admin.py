@@ -48,7 +48,8 @@ class Admin(commands.Cog):
         ]
     )
     @commands.check_any(
-        commands.check(CHECKS.user_has_role_permission), 
+        commands.check(CHECKS.user_has_role_permission),
+        commands.check(CHECKS.user_can_manage_server),
         commands.check(CHECKS.user_is_guild_owner)
     )
     async def grant(self, ctx: discord.ApplicationContext, role: discord.Role, command: str):
@@ -65,7 +66,8 @@ class Admin(commands.Cog):
         ]
     )
     @commands.check_any(
-        commands.check(CHECKS.user_has_role_permission), 
+        commands.check(CHECKS.user_has_role_permission),
+        commands.check(CHECKS.user_can_manage_server),
         commands.check(CHECKS.user_is_guild_owner)
     )
     async def revoke(self, ctx: discord.ApplicationContext, role: discord.Role, command: str):
@@ -81,7 +83,8 @@ class Admin(commands.Cog):
         ]
     )
     @commands.check_any(
-        commands.check(CHECKS.user_has_role_permission), 
+        commands.check(CHECKS.user_has_role_permission),
+        commands.check(CHECKS.user_can_manage_server),
         commands.check(CHECKS.user_is_guild_owner)
     )
     async def roles(self, ctx: discord.ApplicationContext, command: str):
@@ -97,7 +100,8 @@ class Admin(commands.Cog):
         ]
     )
     @commands.check_any(
-        commands.check(CHECKS.user_has_role_permission), 
+        commands.check(CHECKS.user_has_role_permission),
+        commands.check(CHECKS.user_can_manage_server),
         commands.check(CHECKS.user_is_guild_owner)
     )
     async def command(self, ctx: discord.ApplicationContext, role: discord.Role):
@@ -110,7 +114,8 @@ class Admin(commands.Cog):
         description="Receive a top-secret communication."
     )
     @commands.check_any(
-        commands.check(CHECKS.user_has_role_permission), 
+        commands.check(CHECKS.user_has_role_permission),
+        commands.check(CHECKS.user_can_manage_server),
         commands.check(CHECKS.user_is_guild_owner)
     )
     async def message(self, ctx: discord.ApplicationContext):
