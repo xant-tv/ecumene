@@ -2,10 +2,12 @@
 **
 
 # ... except for dependencies and source
-!Pipfile
+!ai
 !bnet/
+!bot/
 !conf/
 !db/
 !util/
 !web/
+!Pipfile
 !main.py
