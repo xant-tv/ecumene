@@ -1,18 +1,17 @@
 import os
 import logging
-# import cx_Oracle
 
 from sqlalchemy import MetaData, Table, Column
-from sqlalchemy import BigInteger, Integer, String, Text, Float
+from sqlalchemy import Integer, String, Text, Float
 from sqlalchemy import UniqueConstraint, ForeignKeyConstraint
-from sqlalchemy import create_engine, inspect, insert, update, delete, select
+from sqlalchemy import create_engine, inspect, insert
 
 from util.local import get_models
 
 COLUMN_JTYPE_TO_DTYPE = {
     'float': Float,
-    'int': Integer,
-    'bigint': BigInteger,
+    'int': Integer, 
+    'bigint': Integer, # For some reason, the native dialect maps this wrongly for Oracle.
     'string': String,
     'text': Text
 }
@@ -36,7 +35,6 @@ class DatabaseService():
         self.models = self._build_models_from_json_(self._models)
 
         # Store engine.
-        # cx_Oracle.init_oracle_client(lib_dir=os.getenv('ORA_HOME'))
         self.engine = create_engine(f"oracle+cx_oracle://{self.user}:{self.password}@{self.sid}")  
         self.log.info(f'Connected as {self.user}@{self.sid}')
         if enforce_schema:
@@ -127,11 +125,6 @@ class DatabaseService():
             )
         return tables
 
-    def _retrieve_model_(self, table):
-        for model in self.models:
-            if model.name == table:
-                return model
-
     def _has_table_(self, table):
         """Convenience function to avoid calling inspect manually."""
         return inspect(self.engine).has_table(table, schema=self.user)
@@ -145,16 +138,22 @@ class DatabaseService():
             self.log.info(f'Creating "{table}" from model')
             table.create(self.engine)
 
-    def execute(self, sql):
+    def retrieve_model(self, table):
+        for model in self.models:
+            if model.name == table:
+                return model
+
+    def execute(self, qry):
         """Execute query and fetch return from cursor."""
         with self.engine.begin() as connection:
-            result = connection.execute(sql)
+            result = connection.execute(qry)
         return result
 
-    # Expect this function to have almost complete coverage of use cases.
+    # Only implement insert directly.
+    # All other basic commands will have to act on query.
     def insert(self, table_name, values):
         """Insert into table model."""
-        table = self._retrieve_model_(table_name)
+        table = self.retrieve_model(table_name)
         qry = (
             insert(table).
                 values(**values)
@@ -162,41 +161,16 @@ class DatabaseService():
         result = self.execute(qry)
         return result
 
-    # Probably impossible to cover all necessary functionality here.
-    def update(self, table_name, values, wcol, wval):
-        """
-        Demonstrative update function. 
-        """
-        table = self._retrieve_model_(table_name)
-        qry = (
-            update(table).
-                where(getattr(table.c, wcol) == wval).
-                values(**values)
-        )
-        result = self.execute(qry)
-        return result
-
-    def delete(self, table_name, dcol, dval):
-        """Delete on column value match."""
-        table = self._retrieve_model_(table_name)
-        qry = (
-            delete(table).
-                where(getattr(table.c, dcol) == dval)
-        )
-        result = self.execute(qry)
-        return result
-
-    def select(self, table_name, wcol, wval):
+    # Implement select to rapidly return result.
+    # The table will need to be passed in here to obtain columns.
+    def select(self, qry):
         """Select on column value match."""
-        table = self._retrieve_model_(table_name)
-        qry = (
-            select(table).
-                where(getattr(table.c, wcol) == wval)
-        )
-        recs = self.execute(qry).fetchall()
-        result = dict(
+        result = self.execute(qry)
+        keys = result.keys()
+        data = result.fetchall()
+        records = dict(
             zip(
-                table.columns.keys(), list(map(list, zip(*recs)))
+                keys, list(map(list, zip(*data)))
             )
         )
-        return result
+        return records

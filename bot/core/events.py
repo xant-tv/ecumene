@@ -5,8 +5,8 @@ import discord
 from bot.core.interactions import EcumeneView, EcumeneDropdown
 from bnet.client import BungieInterface
 from db.client import DatabaseService
+from db.query import update_transaction
 from util.local import get_user
-from util.format import format_as_code_block
 from util.encrypt import generate_state
 from util.time import get_current_time
 
@@ -19,12 +19,14 @@ class EcumeneEventHandler():
 
     async def register(self, ctx):
         """Register with Ecumene leadership."""
+        self.log.info('Command "/register" was invoked')
+
         # Capture message information and generate a state.
         state = generate_state()
         data = {
             'state': state,
-            'discord_id': ctx.author.id,
-            'req_display_name': f'{ctx.author}',
+            'discord_id': str(ctx.author.id),
+            'req_display_name': str(ctx.author),
             'requested_at': get_current_time()
         }
         
@@ -42,25 +44,25 @@ class EcumeneEventHandler():
         )
 
         # Respond to the initial command.
-        await ctx.author.send(embed=embed)
-        await ctx.respond("Negotiations have begun. Enact impulse.")
+        message = await ctx.author.send(embed=embed)
+
+        # Obtain channel and message information that was just sent.
+        # Update transaction record to include this information.
+        info = {
+            'channel_id': str(message.channel.id),
+            'message_id': str(message.id)
+        }
+        update_transaction(self.db, info, state)
+
+        # Close out context.
+        await ctx.respond("Negotiations have begun. Enact impulse.", ephemeral=True)
 
     async def admin(self, ctx):
+        self.log.info('Command "/admin" was invoked')
         await ctx.respond("This information is top-secret.")
 
-    async def flawless(self, ctx, user, activity):
-        member = get_user(user.id, 'discord')
-        is_flawless = self.bnet.is_flawless(
-            member.get('destiny').get('id'), 
-            member.get('destiny').get('type'), 
-            activity.lower()
-        )
-        if is_flawless:
-            await ctx.respond(f'Yes, {user} is a Flawless {activity.capitalize()}er!')
-            return
-        await ctx.respond(f'No, {user} is not a Flawless {activity.capitalize()}er!')
-
     async def colour(self, ctx, limit_interactions: bool):
+        self.log.info('Command "/colour" was invoked')
         # Create the view we want to present.
         # Note the view starts as disabled until the parent message is attached.
         options = [
@@ -101,4 +103,5 @@ class EcumeneEventHandler():
         await response.edit_original_message(view=view)
 
     async def ping(self, ctx):
+        self.log.info('Command "/ping" was invoked')
         await ctx.respond(f"{ctx.author.mention}", ephemeral=True)

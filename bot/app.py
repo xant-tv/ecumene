@@ -29,13 +29,13 @@ ecumene = EcumeneBot()
 async def register(ctx):
     await ecumene.events.register(ctx)
 
-# Demonstration admin-restricted test function.
+# Demonstration admin-restricted role-based access commmand.
 @ecumene.client.slash_command(
     name='admin', 
     description="This is a top-secret communication.", 
     guild_ids=guild_ids
 )
-@ecumene.checks.is_guild_owner()
+@ecumene.checks.user_has_role_permission()
 async def admin(ctx):
     await ecumene.events.admin(ctx)
 
@@ -43,7 +43,7 @@ async def admin(ctx):
 async def admin_error(ctx, error):
     await ecumene.errors.admin(ctx, error)
 
-# Demonstration arguments and role-based access commmand.
+# Demonstration of how arguments work.
 @ecumene.client.slash_command(
     name='flawless', 
     description="I'm better than you.",
@@ -54,13 +54,8 @@ async def admin_error(ctx, error):
     ],
     guild_ids=guild_ids
 )
-@ecumene.checks.user_has_role_permission()
 async def flawless(ctx, activity: str, user: discord.Member, meme: str):
-    await ecumene.events.flawless(ctx, user, activity.lower())
-
-@flawless.error
-async def flawless_error(ctx, error):
-    await ecumene.errors.flawless(ctx, error)
+    await ecumene.events.ping(ctx)
 
 # Demonstration interaction test command.
 @ecumene.client.slash_command(
@@ -73,15 +68,6 @@ async def flawless_error(ctx, error):
 )
 async def colour(ctx, limit):
     await ecumene.events.colour(ctx, strtobool(limit.lower()))
-
-# Attach simple pign function.
-@ecumene.client.slash_command(
-    name='ping',
-    description='You have a red dot now.',
-    guild_ids=guild_ids, 
-)
-async def ping(ctx):
-    await ecumene.events.ping(ctx)
 
 def start():
     """Callable to run application."""
