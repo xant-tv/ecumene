@@ -1,4 +1,3 @@
-ARG PYTHON_VERSION=3.6
 FROM ubuntu:18.04 AS client
 ARG MODULE
 

@@ -2,7 +2,7 @@
 **
 
 # ... except for dependencies and source
-!ai
+!api
 !bnet/
 !bot/
 !conf/
