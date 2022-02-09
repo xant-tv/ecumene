@@ -17,16 +17,24 @@ ecumene = EcumeneWeb()
 
 @ecumene.client.errorhandler(500)
 def server_error(error):
-    return render_template('view/failure.html'), 500
+    return render_template('view/500.html'), 500
 
 @ecumene.client.errorhandler(404)
 def page_not_found(error):
-    return render_template('view/failure.html'), 404
+    return render_template('view/404.html'), 404
+
+@ecumene.client.route("/success", methods=['GET'])
+def success():
+    return render_template('view/reg_success.html')
+
+@ecumene.client.route("/failure", methods=['GET'])
+def failure():
+    return render_template('view/reg_failure.html')
 
 @ecumene.client.route("/login", methods=['GET'])
 def login():
     ecumene.routes.capture_login(request)
-    return render_template('view/success.html')
+    return render_template('view/reg_success.html')
 
 @ecumene.client.route("/", methods=['GET'])
 def index():
