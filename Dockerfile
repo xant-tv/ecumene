@@ -3,15 +3,12 @@ ARG MODULE
 
 ENV ORACLE_ZIP_INTERNAL_FOLDER=instantclient_21_5
 ENV CLIENT_ZIP=oracleinstantclient.zip
-ENV SDK_ZIP=oraclesdk.zip
 
 # Install Oracle Instant Client
 WORKDIR /root
 RUN apt-get update && apt-get -yq install unzip wget
 RUN wget -O oracleinstantclient.zip https://download.oracle.com/otn_software/linux/instantclient/215000/instantclient-basic-linux.x64-21.5.0.0.0dbru.zip
-RUN wget -O oraclesdk.zip https://download.oracle.com/otn_software/linux/instantclient/215000/instantclient-sdk-linux.x64-21.5.0.0.0dbru.zip
 RUN unzip ${CLIENT_ZIP}
-RUN unzip ${SDK_ZIP}
 RUN mv ${ORACLE_ZIP_INTERNAL_FOLDER} oracle
 
 FROM python:3.8 as builder
