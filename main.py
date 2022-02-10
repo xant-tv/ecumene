@@ -33,6 +33,9 @@ elif args.module == RUN_BOT:
     bot.app.start()
 elif args.module == RUN_WEB:
     import web.app
-    web.app.start()
+    web.app.start(
+        # TODO: Remove hacky garbage when actually deployed.
+        ssl_context=('cert.pem', 'key.pem')
+    )
 else:
     pass

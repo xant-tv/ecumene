@@ -32,5 +32,5 @@ class EcumeneWeb():
     def log_request(self, request, response):
         self.log.info(f'{request.remote_addr} | {request.scheme.upper()} | {request.method} | {request.full_path} | {response.status}')
 
-    def run(self):
-        self.client.run(port=self.port)
+    def run(self, **kwargs):
+        self.client.run(port=self.port, **kwargs)

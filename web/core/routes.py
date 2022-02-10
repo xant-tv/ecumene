@@ -5,6 +5,7 @@ from api.client import DiscordInterface, DiscordInterfaceError
 from db.client import DatabaseService
 from db.query import get_transaction, update_transaction, insert_or_update_member
 from util.time import get_current_time
+from util.enum import ENUM_USER_REGISTRATION, ENUM_ADMIN_REGISTRATION, ENUM_REGISTRATION
 
 class EcumeneRouteHandler():
 
@@ -25,6 +26,18 @@ class EcumeneRouteHandler():
         update_transaction(self.db, capture, request.args.get('state'))
         result = get_transaction(self.db, request.args.get('state'))
 
+        # Split functionality depending on purpose enumeration.
+        purpose = result.get('purpose')[0]
+        if purpose not in ENUM_REGISTRATION:
+            raise NotImplementedError(f'Transaction purpose "{purpose}" not implemented.')
+        elif purpose == ENUM_USER_REGISTRATION:
+            return self.capture_login_user(request, result)
+        elif purpose == ENUM_ADMIN_REGISTRATION:
+            return self.capture_login_admin(request, result)
+        raise ValueError('Transaction did not specify purpose.')
+
+    def capture_login_user(self, request, result):
+        """Login capture variant intended for user registration."""
         # Put this in a try-except block so we can notify the user.
         try:
 
@@ -87,4 +100,8 @@ class EcumeneRouteHandler():
             # Re-raise the initial error so we can capture it through proper route error-handlers.
             raise exc
 
-        return
+        # We want to return the display name of the user.
+        return result.get('purpose')[0], result.get('req_display_name')[0]
+
+    def capture_login_admin(self, request, result):
+        return result.get('purpose')[0], None

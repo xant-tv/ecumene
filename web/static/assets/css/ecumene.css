@@ -55,7 +55,7 @@
   --bs-body-font-weight: 400;
   --bs-body-line-height: 1.5;
   --bs-body-color: #212529;
-  --bs-body-bg: #1e263b;
+  --bs-body-bg: #fff;
 }
 
 *,
@@ -7325,6 +7325,10 @@ textarea.form-control-lg {
 
 .mt-4 {
   margin-top: 1.5rem !important;
+}
+
+.mt-4-ish {
+  margin-top: 2rem !important;
 }
 
 .mt-5 {

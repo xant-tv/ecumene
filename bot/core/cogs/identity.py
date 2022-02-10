@@ -8,6 +8,7 @@ from bot.core.shared import DATABASE, BNET, GUILDS
 from db.query import update_transaction
 from util.encrypt import generate_state
 from util.time import get_current_time
+from util.enum import ENUM_USER_REGISTRATION
 
 CHECKS = EcumeneCheck()
 
@@ -36,10 +37,12 @@ class Identity(commands.Cog):
 
         # Capture message information and generate a state.
         state = generate_state()
+        purpose = ENUM_USER_REGISTRATION
         data = {
             'state': state,
             'discord_id': str(ctx.author.id),
             'req_display_name': str(ctx.author),
+            'purpose': purpose,
             'requested_at': get_current_time()
         }
         

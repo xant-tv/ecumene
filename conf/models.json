@@ -35,6 +35,11 @@
                         "size": 60
                     },
                     {
+                        "name": "purpose",
+                        "type": "string",
+                        "size": 60
+                    },
+                    {
                         "name": "code",
                         "type": "string",
                         "size": 100
