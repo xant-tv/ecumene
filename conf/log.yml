@@ -30,15 +30,7 @@ loggers:
     level: INFO
     handlers: [console]
     propagate: no
-  bot.core.events.EcumeneEventHandler:
-    level: INFO
-    handlers: [console]
-    propagate: no
-  bot.core.checks.EcumeneCheckHandler:
-    level: INFO
-    handlers: [console]
-    propagate: no
-  bot.core.errors.EcumeneErrorHandler:
+  bot.core.checks.EcumeneCheck:
     level: INFO
     handlers: [console]
     propagate: no

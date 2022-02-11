@@ -1,0 +1,73 @@
+{% extends 'layouts/base.html' %}
+
+{% block title %} Home {% endblock %}
+
+{% block content %}
+    <!-- Masthead-->
+    <header class="masthead bg-body text-white text-center">
+        <div class="container d-flex align-items-center flex-column">
+            <!-- Masthead Avatar Image-->
+            <img class="masthead-avatar mb-5" src="static/assets/img/ecumene.png" alt="Ecumene Logo" />
+            <!-- Masthead Heading-->
+            <h1 class="masthead-heading text-uppercase mb-0">Ecumene</h1>
+            <!-- Icon Divider-->
+            <div class="divider-custom divider-light">
+                <div class="divider-custom-line"></div>
+                <div class="divider-custom-icon"><object class="divider-custom-icon-img svg-white" data="static/assets/img/d2.svg" type="image/svg+xml"></object></div>
+                <div class="divider-custom-line"></div>
+            </div>
+            <!-- Masthead Subheading-->
+            <p class="masthead-subheading font-weight-light mb-0">Discord Bot - Destiny Integration - Clan Management</p>
+        </div>
+    </header>
+    <!-- About -->
+    <section class="page-section bg-white text-dark mb-0" id="About">
+        <div class="container">
+            <!-- About Section Heading-->
+            <h2 class="page-section-heading text-center text-uppercase text-dark">About</h2>
+            <!-- Icon Divider-->
+            <div class="divider-custom divider-dark">
+                <div class="divider-custom-line"></div>
+                <div class="divider-custom-icon"><object class="divider-custom-icon-img svg-dark" data="static/assets/img/d2.svg" type="image/svg+xml"></object></div>
+                <div class="divider-custom-line"></div>
+            </div>
+            <!-- About Section Content-->
+            <div class="col-lg-9 ms-auto me-auto text-center">
+                <p class="lead">
+                    Ecumene is a Discord bot that provides clan management services for Destiny 2 through a series of simple commands. 
+                    Unlike other popular tools, this bot empowers clan leaders with the ability to monitor member activity and automate approvals or removals.
+                </p>
+            </div>
+            <div class="col-lg-9 ms-auto me-auto text-center">
+                <p class="lead mt-4-ish">
+                    Supported functionality:
+                </p>
+            </div>
+            <div class="row">
+                <div class="col-lg-1 ms-auto">
+                </div>
+                <div class="col-lg-5 me-auto">
+                    <ul>
+                        <li class="lead">Slash commands with role-based restrictions.</li>
+                        <li class="lead">Clan activity monitoring and querying.</li>
+                        <li class="lead">Kick from clan directly through Discord.</li>
+                        <li class="lead">Automatic notification on pending member requests.</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="col-lg-9 ms-auto me-auto text-center">
+                <p class="lead mt-4">
+                    With a bit of savvy, you can host your own instance of this website and bot.<br>
+                    Please download the source code or contact the developers for help.
+                </p>
+            </div>
+            <!-- About Section Button-->
+            <div class="text-center mt-4">
+                <a class="btn btn-xl btn-outline-dark" href="https://github.com/xant-tv/ecumene">
+                    <i class="fab fa-github me-2"></i>
+                    Source Code
+                </a>
+            </div>
+        </div>
+    </section>
+{% endblock %}

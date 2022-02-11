@@ -41,10 +41,13 @@ class DiscordInterface():
         """Provide a `requests` method to execute."""
         self.log.info(f'{method.__name__.upper()} -> {url}')
         response = method(url, headers=headers, params=params, json=json, data=data)
-        body = response.json()
+        body = None
+        if response.text:
+            # This is necessary just because the /delete endpoint returns no content.
+            body = response.json()
         if not response.ok:
             raise DiscordInterfaceError(body.get('message'))
-        return response.json()
+        return body
 
     def delete_message(self, channel_id, message_id):
         url = self._get_url_('channels', channel_id, 'messages', message_id)
