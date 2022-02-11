@@ -1,0 +1,13 @@
+# Ignore everything
+**
+
+# ... except for dependencies and source
+!api
+!bnet/
+!bot/
+!conf/
+!db/
+!util/
+!web/
+!Pipfile
+!main.py
