@@ -4,8 +4,11 @@ services:
   task:
     build: 
       context: ./src
-    command: task
     image: ecumene-core:dev
+    container_name: ecumene-task
+    networks:
+      - ecumene
+    command: task
     volumes:
       - ${DB_WALLET_FOLDER}:/opt/oracle/network/admin
     env_file:
@@ -13,8 +16,11 @@ services:
   web:
     build: 
       context: ./src
-    command: web
     image: ecumene-core:dev
+    container_name: ecumene-web
+    networks:
+      - ecumene
+    command: web
     volumes:
       - ${DB_WALLET_FOLDER}:/opt/oracle/network/admin
     expose:
@@ -26,6 +32,9 @@ services:
   nginx:
     build: ./nginx
     image: ecumene-nginx:dev
+    container_name: ecumene-nginx
+    networks:
+      - ecumene
     volumes:
       - ${WEB_CERTS_FOLDER}:/etc/ssl/certs/ecumene
     ports:
@@ -33,3 +42,7 @@ services:
       - 443:443
     depends_on:
       - web
+
+networks:
+  ecumene:
+    name: ecumene
