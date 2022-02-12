@@ -2,9 +2,7 @@ version: '3.8'
 
 services:
   task:
-    build: 
-      context: ./src
-    image: ecumene-core:dev
+    image: ${IMAGE_HOST}ecumene-core:${IMAGE_TAG}
     container_name: ecumene-task
     networks:
       - ecumene
@@ -14,9 +12,7 @@ services:
     env_file:
       - .env
   web:
-    build: 
-      context: ./src
-    image: ecumene-core:dev
+    image: ${IMAGE_HOST}ecumene-core:${IMAGE_TAG}
     container_name: ecumene-web
     networks:
       - ecumene
@@ -30,13 +26,13 @@ services:
     depends_on:
       - task
   nginx:
-    build: ./nginx
-    image: ecumene-nginx:dev
+    image: ${IMAGE_HOST}ecumene-nginx:${IMAGE_TAG}
     container_name: ecumene-nginx
     networks:
       - ecumene
     volumes:
-      - ${WEB_CERTS_FOLDER}:/etc/ssl/certs/ecumene
+      - ${WEB_CERTS_FOLDER}/fullchain.pem:/etc/ssl/certs/ecumene/fullchain.pem
+      - ${WEB_CERTS_FOLDER}/privkey.pem:/etc/ssl/certs/ecumene/privkey.pem
     ports:
       - 80:80
       - 443:443

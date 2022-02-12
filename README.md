@@ -26,9 +26,12 @@ Install the following:
  - certbot
  - [oci](https://docs.oracle.com/en-us/iaas/Content/API/SDKDocs/cliinstall.htm)
 
+#### Certbot
+Needed to manually set up CRON to renew:
+`echo "30 0,12 * * * root certbot renew -q" | sudo tee -a /etc/crontab > /dev/null`
 
 #### OCI CLI Tools:
-
+TBD
 
 ## Contributing
 Bear the following in mind when setting up an environment for contributing.

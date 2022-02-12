@@ -4,9 +4,9 @@
 # ======
 FROM nginx:1.21-alpine
 
-# Create certification location and volume
+# Create certification location
+# Certs will probably have to be individually mounted here
 RUN mkdir -p /etc/ssl/certs/ecumene
-VOLUME ["/etc/ssl/certs/ecumene"]
 
 # Stage configuration
 RUN rm /etc/nginx/conf.d/default.conf

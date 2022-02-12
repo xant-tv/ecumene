@@ -9,6 +9,8 @@ Hooks should be placed in the following folders:
 /etc/letsencrypt/renewal-hooks
 ├── pre
 ├── deploy
+    └── nginx-pre-renewal.sh
 └── post
-    └── nginx-post-renewal.sh
 ```
+
+There are also pre- and post-hook shell scripts, but these are currently **not** necessary.
