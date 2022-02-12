@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  task:
+    build: 
+      context: ./src
+    command: task
+    image: ecumene-core:dev
+    volumes:
+      - ${DB_WALLET_FOLDER}:/opt/oracle/network/admin
+    env_file:
+      - .env
+  web:
+    build: 
+      context: ./src
+    command: web
+    image: ecumene-core:dev
+    volumes:
+      - ${DB_WALLET_FOLDER}:/opt/oracle/network/admin
+    expose:
+      - ${WEB_PORT}
+    env_file:
+      - .env
+    depends_on:
+      - task
+  nginx:
+    build: ./nginx
+    image: ecumene-nginx:dev
+    volumes:
+      - ${WEB_CERTS_FOLDER}:/etc/ssl/certs/ecumene
+    ports:
+      - 80:80
+      - 443:443
+    depends_on:
+      - web

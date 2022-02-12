@@ -13,7 +13,7 @@ class EcumeneRouteHandler():
         self.log = logging.getLogger(f'{self.__module__}.{self.__class__.__name__}')
         self.bnet = BungieInterface()
         self.api = DiscordInterface()
-        self.db = DatabaseService(enforce_schema=True)
+        self.db = DatabaseService()
 
     def capture_login(self, request):
         """Complete account linkage between Destiny 2 and Discord."""

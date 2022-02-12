@@ -32,31 +32,29 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Extract metadata (tags, labels) for Docker
-        id: metaweb
+        id: meta-ecumene-core
         uses: docker/metadata-action@98669ae865ea3cffbcbaa878cf57c20bbf1c6c38
         with:
-          images: ${{ env.REGISTRY }}/${{ env.REPOSITORY }}/web
+          images: ${{ env.REGISTRY }}/${{ env.REPOSITORY }}/ecumene-core
 
       - name: Build and push Docker image
         uses: docker/build-push-action@ad44023a93711e3deb337508980b4b5e9bcdc5dc
         with:
-          context: .
-          build-args: MODULE=web
+          context: ./src
           push: true
-          tags: ${{ steps.metaweb.outputs.tags }}
-          labels: ${{ steps.metaweb.outputs.labels }}
+          tags: ${{ steps.meta-ecumene-core.outputs.tags }}
+          labels: ${{ steps.meta-ecumene-core.outputs.labels }}
 
       - name: Extract metadata (tags, labels) for Docker
-        id: metabot
+        id: meta-ecumene-nginx
         uses: docker/metadata-action@98669ae865ea3cffbcbaa878cf57c20bbf1c6c38
         with:
-          images: ${{ env.REGISTRY }}/${{ env.REPOSITORY }}/bot
+          images: ${{ env.REGISTRY }}/${{ env.REPOSITORY }}/ecumene-nginx
 
       - name: Build and push Docker image
         uses: docker/build-push-action@ad44023a93711e3deb337508980b4b5e9bcdc5dc
         with:
-          context: .
-          build-args: MODULE=bot
+          context: ./nginx
           push: true
-          tags: ${{ steps.metabot.outputs.tags }}
-          labels: ${{ steps.metabot.outputs.labels }}
+          tags: ${{ steps.meta-ecumene-nginx.outputs.tags }}
+          labels: ${{ steps.meta-ecumene-nginx.outputs.labels }}

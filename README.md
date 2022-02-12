@@ -4,6 +4,32 @@ Advanced interaction between Destiny 2 and Discord.
 ## Setup
 TBD
 
+### Oracle Cloud
+Talk through
+ - Provisioning of compartment, 
+ - database (make a user through the UI),
+ - VCN (create first, set up security list rules), 
+ - IPs (just search for this one it's easy), 
+ - compute, 
+ - vault (also easy - so far!)
+
+#### VCN:
+ - Open ports via security list
+
+#### Compute:
+Run some basic firewalld commands
+ `sudo firewall-cmd --zone=public --permanent --add-port=<your_port>/<protocol>`
+ `sudo firewall-cmd --reload`
+
+Install the following:
+ - [docker](https://docs.docker.com/engine/install/rhel/)
+ - certbot
+ - [oci](https://docs.oracle.com/en-us/iaas/Content/API/SDKDocs/cliinstall.htm)
+
+
+#### OCI CLI Tools:
+
+
 ## Contributing
 Bear the following in mind when setting up an environment for contributing.
 

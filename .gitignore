@@ -133,4 +133,5 @@ dmypy.json
 .idea
 
 # Ignore some temporary local certs.
+certs/
 *.pem

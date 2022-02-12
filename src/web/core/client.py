@@ -26,11 +26,7 @@ class EcumeneWeb():
             static_url_path='/static', # Serve images from "/static" paths.
             static_folder='../static' # Again, relative to this file.
         )
-        self.port = os.getenv('WEB_PORT', 8080)
         self.routes = EcumeneRouteHandler()
 
     def log_request(self, request, response):
         self.log.info(f'{request.remote_addr} | {request.scheme.upper()} | {request.method} | {request.full_path} | {response.status}')
-
-    def run(self, **kwargs):
-        self.client.run(port=self.port, **kwargs)

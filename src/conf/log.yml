@@ -42,6 +42,10 @@ loggers:
     level: INFO
     handlers: [console]
     propagate: no
+  task.core.scheduler.EcumeneScheduler:
+    level: INFO
+    handlers: [console]
+    propagate: no
   bnet.client.BungieInterface:
     level: INFO
     handlers: [console]

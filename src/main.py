@@ -18,10 +18,11 @@ dotenv.load_dotenv()
 # Enumerated choices.
 RUN_BOT = 'bot'
 RUN_WEB = 'web'
+RUN_TASK = 'task'
 
 # Argument parsing.
 parser = argparse.ArgumentParser(description='Welcome to the Ecumene interface...')
-parser.add_argument('module', choices=[RUN_BOT, RUN_WEB])
+parser.add_argument('module', choices=[RUN_BOT, RUN_WEB, RUN_TASK])
 args = parser.parse_args()
 
 # Application import once arguments have been successfully parsed.
@@ -33,9 +34,9 @@ elif args.module == RUN_BOT:
     bot.app.start()
 elif args.module == RUN_WEB:
     import web.app
-    web.app.start(
-        # TODO: Remove hacky garbage when actually deployed.
-        ssl_context=('cert.pem', 'key.pem')
-    )
+    web.app.start()
+elif args.module == RUN_TASK:
+    import task.run
+    task.run.start()
 else:
     pass
