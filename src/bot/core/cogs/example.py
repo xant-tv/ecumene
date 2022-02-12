@@ -25,7 +25,8 @@ class Example(commands.Cog):
 
     @slash_command(
         name='ping',
-        description='You have a red dot now.'
+        description='You have a red dot now.',
+        guild_ids=GUILDS
     )
     async def ping(self, ctx: discord.ApplicationContext):
         self.log.info('Command "/ping" invoked')

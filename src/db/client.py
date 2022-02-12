@@ -35,10 +35,15 @@ class DatabaseService():
         self.models = self._build_models_from_json_(self._models)
 
         # Store engine.
-        self.engine = create_engine(f"oracle+cx_oracle://{self.user}:{self.password}@{self.sid}")  
+        self.engine = create_engine(f"oracle+cx_oracle://{self.user}:{self.password}@{self.sid}")
+        self._test_connect_()
         self.log.info(f'Connected as {self.user}@{self.sid}')
         if enforce_schema:
             self._enforce_schema_()
+
+    def _test_connect_(self):
+        qry = "select SYSDATE from DUAL"
+        return self.execute(qry)
 
     def _map_column_(self, jtype, size=None, **kwargs):
         """Maps the column configuration into a column type."""

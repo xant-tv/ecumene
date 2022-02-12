@@ -23,6 +23,7 @@ Run some basic firewalld commands
 
 Install the following:
  - [docker](https://docs.docker.com/engine/install/rhel/)
+ - [Configure docker to start on boot](https://docs.docker.com/engine/install/linux-postinstall/#configure-docker-to-start-on-boot)
  - certbot
  - [oci](https://docs.oracle.com/en-us/iaas/Content/API/SDKDocs/cliinstall.htm)
 

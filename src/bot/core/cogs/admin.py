@@ -45,7 +45,8 @@ class Admin(commands.Cog):
         options=[
             discord.Option(discord.Role, name='role', description="Role to award grant to."),
             discord.Option(str, name='command', description='Command to grant permissions for.', choices=sorted(DICT_OF_ALL_COMMANDS.keys()))
-        ]
+        ], 
+        guild_ids=GUILDS
     )
     @commands.check_any(
         commands.check(CHECKS.user_has_role_permission),
@@ -63,7 +64,8 @@ class Admin(commands.Cog):
         options=[
             discord.Option(discord.Role, name='role', description="Role to revoke permissions from."),
             discord.Option(str, name='command', description='Command to revoke access to.', choices=sorted(DICT_OF_ALL_COMMANDS.keys()))
-        ]
+        ], 
+        guild_ids=GUILDS
     )
     @commands.check_any(
         commands.check(CHECKS.user_has_role_permission),
@@ -80,7 +82,8 @@ class Admin(commands.Cog):
         description="List all roles able to execute a command.",
         options=[
             discord.Option(str, name='command', description='Command to list role permissions for.', choices=sorted(DICT_OF_ALL_COMMANDS.keys()))
-        ]
+        ], 
+        guild_ids=GUILDS
     )
     @commands.check_any(
         commands.check(CHECKS.user_has_role_permission),
@@ -97,7 +100,8 @@ class Admin(commands.Cog):
         description="List all roles able to execute a command.",
         options=[
             discord.Option(discord.Role, name='role', description='Role to list command permissions for.')
-        ]
+        ], 
+        guild_ids=GUILDS
     )
     @commands.check_any(
         commands.check(CHECKS.user_has_role_permission),
@@ -111,7 +115,8 @@ class Admin(commands.Cog):
     # Demonstration admin-restricted role-based access commmand.
     @admin.command(
         name='message', 
-        description="Receive a top-secret communication."
+        description="Receive a top-secret communication.", 
+        guild_ids=GUILDS
     )
     @commands.check_any(
         commands.check(CHECKS.user_has_role_permission),
