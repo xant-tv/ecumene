@@ -1,3 +1,11 @@
+---
+name: Feature Template
+about: Describe a new feature
+title: 'Feat - '
+labels: "enhancement"
+assignees: ''
+---
+
 ## Description
 
 <!-- Add a brief description of the feature, what it is to achieve, why, etc. -->

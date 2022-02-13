@@ -1,3 +1,11 @@
+---
+name: Bug Template
+about: Describe a bug
+title: 'Bug - '
+labels: "bug"
+assignees: ''
+---
+
 ## Expected Behaviour
 
 <!-- Describe in detail the expected behaviour -->
