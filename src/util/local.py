@@ -12,16 +12,12 @@ def get_models():
     models = load_local('models').get('models')
     return models
 
-def get_roles_permitted(parent, command):
+def get_roles_permitted(paths):
     roles = load_local('roles').get('roles')
+    permissions = set(paths)
     permitted = list()
     for role in roles:
-        parent_permission = f'{parent}.*'
-        command_permission = f'{parent}.{command}'
-        # Check if wildcard parent is granted.
-        if parent_permission in role.get('permissions'):
-            permitted.append(role.get('id'))
-        elif command_permission in role.get('permissions'):
+        if set.intersection(permissions, set(role.get('permissions'))):
             permitted.append(role.get('id'))
     return permitted
 

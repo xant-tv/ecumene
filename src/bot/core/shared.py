@@ -17,6 +17,10 @@ DICT_OF_ALL_COMMANDS = {
     '/admin revoke': 'admin.revoke',
     '/admin roles': 'admin.roles',
     '/admin command': 'admin.command',
-    '/admin register': 'admin.register',
-    '/admin message': 'admin.message'
+    '/admin clan': 'admin.clan.*',
+    '/admin clan register': 'admin.clan.register',
+    '/admin clan grant': 'admin.clan.grant',
+    '/admin clan revoke': 'admin.clan.revoke',
+    '/admin clan list': 'admin.clan.list',
+    '/admin message': 'admin.message' # Remove this eventually...
 }

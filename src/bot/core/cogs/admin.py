@@ -21,20 +21,30 @@ class Admin(commands.Cog):
     This includes:
       - /admin grant <role> <command> (configure permissions for the selected role)
       - /admin revoke <role> <command> (undoes the grant)
-      - /admin roles <command> (list roles with permissiosn for a command)
+      - /admin roles <command> (list roles with permissions for a command)
       - /admin command <roles> (list commands able to be run by a specific role)
-      - /admin register <group> (basically /register but for a destiny clan)
-      - /admin message (restricted test command)
+
+    These commands are useful for registering a clan:
+      - /admin clan register <clan> (basically /register but for a destiny clan)
+      - /admin clan list (list clans and the roles that administrate them)
+      - /admin clan grant <clan> <role> (allows the selected role to run /clan commands for that clan)
+      - /admin clan revoke <clan> <role> (disallows the selected role from running /clan commands for that clan)
     """
     def __init__(self, log):
         self.log = log
         super().__init__()
 
     # Define a top-level command group.
-    # It would be possible to attach 
     admin = SlashCommandGroup(
         "admin", 
         "Restricted admin commands.", 
+        guild_ids=GUILDS
+    )
+
+    # Create a subgroup for clan-level configuration.
+    clan = admin.create_subgroup(
+        "clan", 
+        "Restricted admin commands for clan configuration.", 
         guild_ids=GUILDS
     )
 
@@ -111,6 +121,20 @@ class Admin(commands.Cog):
     async def command(self, ctx: discord.ApplicationContext, role: discord.Role):
         self.log.info('Command "/command" was invoked')
         await ctx.respond(f'List permissions for {role.mention}!')
+
+    @clan.command(
+        name='register',
+        description='Register a clan with Ecumene.',
+        guild_ids=GUILDS
+    )
+    @commands.check_any(
+        commands.check(CHECKS.user_has_role_permission),
+        commands.check(CHECKS.user_can_manage_server),
+        commands.check(CHECKS.user_is_guild_owner)
+    )
+    async def register(self, ctx: discord.ApplicationContext):
+        self.log.info('Command "/register" was invoked')
+        await ctx.respond("This is the worst idea in the world.")
 
     # Demonstration admin-restricted role-based access commmand.
     @admin.command(
