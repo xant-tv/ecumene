@@ -32,9 +32,17 @@ class BungieInterface():
         self.secret = os.getenv('BNET_CLIENT_SECRET')
         self.enum = BungieEnumerations()
 
+    def _agent_(self):
+        agent_app = f"{os.getenv('APPLICATION_NAME')}/{os.getenv('APPLICATION_VERSION')}"
+        agent_bnet = f"{os.getenv('BNET_APP_NAME')}/{os.getenv('BNET_APP_ID')}"
+        agent_contact = f"{os.getenv('WEB_URL')};{os.getenv('CONTACT_EMAIL')}"
+        agent = f"{agent_app} {agent_bnet} (+{agent_contact})"
+        return agent
+
     def _get_headers_(self):
         """Attach required API key for Bungie.net interaction."""
         headers = {
+            'User-Agent': self._agent_(), # Bungie nicely asks for us to do this.
             'X-API-Key': self.key
         }
         return headers
@@ -100,3 +108,10 @@ class BungieInterface():
         profiles = self._strip_outer_(response).get('profiles')
         # Only return first profile (should only be one)
         return profiles[0]
+
+    def get_group_by_id(self, group_id):
+        url = self._get_url_('GroupV2', group_id)
+        headers = self._get_headers_()
+        response = self._execute_(requests.get, url, headers=headers)
+        detail = self._strip_outer_(response).get('detail')
+        return detail
