@@ -6,9 +6,10 @@ from discord.ext import commands
 
 from bot.core.checks import EcumeneCheck
 from bot.core.shared import DATABASE, BNET, GUILDS, DICT_OF_ALL_COMMANDS
-from db.query import update_transaction
+from db.query.transactions import update_transaction
 from util.encrypt import generate_state
 from util.time import get_current_time
+from util.enum import ENUM_ADMIN_REGISTRATION
 
 CHECKS = EcumeneCheck()
 
@@ -16,19 +17,14 @@ CHECKS = EcumeneCheck()
 # TODO: All functions here will require an audit log as well.
 
 class Admin(commands.Cog):
+
     """
     Cog holding all admin-related functions.
-    This includes:
-      - /admin grant <role> <command> (configure permissions for the selected role)
-      - /admin revoke <role> <command> (undoes the grant)
-      - /admin roles <command> (list roles with permissions for a command)
-      - /admin command <roles> (list commands able to be run by a specific role)
-
-    These commands are useful for registering a clan:
-      - /admin clan register <clan> (basically /register but for a destiny clan)
-      - /admin clan list (list clans and the roles that administrate them)
-      - /admin clan grant <clan> <role> (allows the selected role to run /clan commands for that clan)
-      - /admin clan revoke <clan> <role> (disallows the selected role from running /clan commands for that clan)
+    These commands are used for registering clan administration:
+      - /admin register <clan> (basically /register but for a destiny clan)
+      - /admin list (list clans and the roles that administrate them)
+      - /admin grant <clan> <role> (allows the selected role to run /clan commands for that clan)
+      - /admin revoke <clan> <role> (disallows the selected role from running /clan commands for that clan)
     """
     def __init__(self, log):
         self.log = log
@@ -37,94 +33,16 @@ class Admin(commands.Cog):
     # Define a top-level command group.
     admin = SlashCommandGroup(
         "admin", 
-        "Restricted admin commands.", 
+        "Restricted clan administration commands.", 
         guild_ids=GUILDS
     )
-
-    # Create a subgroup for clan-level configuration.
-    clan = admin.create_subgroup(
-        "clan", 
-        "Restricted admin commands for clan configuration.", 
-        guild_ids=GUILDS
-    )
-
-    # Grant function to configure per-role permissions.
-    @admin.command(
-        name='grant', 
-        description="Grant permission for a role to execute a command.",
-        options=[
-            discord.Option(discord.Role, name='role', description="Role to award grant to."),
-            discord.Option(str, name='command', description='Command to grant permissions for.', choices=sorted(DICT_OF_ALL_COMMANDS.keys()))
-        ], 
-        guild_ids=GUILDS
-    )
-    @commands.check_any(
-        commands.check(CHECKS.user_has_role_permission),
-        commands.check(CHECKS.user_can_manage_server),
-        commands.check(CHECKS.user_is_guild_owner)
-    )
-    async def grant(self, ctx: discord.ApplicationContext, role: discord.Role, command: str):
-        self.log.info('Command "/grant" was invoked')
-        permission = DICT_OF_ALL_COMMANDS.get(command)
-        await ctx.respond(f'Grant {permission} to {role.mention}!')
 
     @admin.command(
-        name='revoke', 
-        description="Revoke permission from a role to execute a command.",
-        options=[
-            discord.Option(discord.Role, name='role', description="Role to revoke permissions from."),
-            discord.Option(str, name='command', description='Command to revoke access to.', choices=sorted(DICT_OF_ALL_COMMANDS.keys()))
-        ], 
-        guild_ids=GUILDS
-    )
-    @commands.check_any(
-        commands.check(CHECKS.user_has_role_permission),
-        commands.check(CHECKS.user_can_manage_server),
-        commands.check(CHECKS.user_is_guild_owner)
-    )
-    async def revoke(self, ctx: discord.ApplicationContext, role: discord.Role, command: str):
-        self.log.info('Command "/revoke" was invoked')
-        permission = DICT_OF_ALL_COMMANDS.get(command)
-        await ctx.respond(f'Revoke {permission} from {role.mention}!')
-
-    @admin.command(
-        name='roles', 
-        description="List all roles able to execute a command.",
-        options=[
-            discord.Option(str, name='command', description='Command to list role permissions for.', choices=sorted(DICT_OF_ALL_COMMANDS.keys()))
-        ], 
-        guild_ids=GUILDS
-    )
-    @commands.check_any(
-        commands.check(CHECKS.user_has_role_permission),
-        commands.check(CHECKS.user_can_manage_server),
-        commands.check(CHECKS.user_is_guild_owner)
-    )
-    async def roles(self, ctx: discord.ApplicationContext, command: str):
-        self.log.info('Command "/roles" was invoked')
-        permission = DICT_OF_ALL_COMMANDS.get(command)
-        await ctx.respond(f'List roles for {permission}!')
-
-    @admin.command(
-        name='command', 
-        description="List all roles able to execute a command.",
-        options=[
-            discord.Option(discord.Role, name='role', description='Role to list command permissions for.')
-        ], 
-        guild_ids=GUILDS
-    )
-    @commands.check_any(
-        commands.check(CHECKS.user_has_role_permission),
-        commands.check(CHECKS.user_can_manage_server),
-        commands.check(CHECKS.user_is_guild_owner)
-    )
-    async def command(self, ctx: discord.ApplicationContext, role: discord.Role):
-        self.log.info('Command "/command" was invoked')
-        await ctx.respond(f'List permissions for {role.mention}!')
-
-    @clan.command(
         name='register',
         description='Register a clan with Ecumene.',
+        options=[
+            discord.Option(str, name='id', description='Group identifier for the clan you wish to register.', required=True)
+        ],
         guild_ids=GUILDS
     )
     @commands.check_any(
@@ -132,30 +50,53 @@ class Admin(commands.Cog):
         commands.check(CHECKS.user_can_manage_server),
         commands.check(CHECKS.user_is_guild_owner)
     )
-    async def register(self, ctx: discord.ApplicationContext):
-        self.log.info('Command "/register" was invoked')
-        await ctx.respond("This is the worst idea in the world.")
+    async def register(self, ctx: discord.ApplicationContext, id: str):
+        self.log.info('Command "/admin register" was invoked')
 
-    # Demonstration admin-restricted role-based access commmand.
-    @admin.command(
-        name='message', 
-        description="Receive a top-secret communication.", 
-        guild_ids=GUILDS
-    )
-    @commands.check_any(
-        commands.check(CHECKS.user_has_role_permission),
-        commands.check(CHECKS.user_can_manage_server),
-        commands.check(CHECKS.user_is_guild_owner)
-    )
-    async def message(self, ctx: discord.ApplicationContext):
-        self.log.info('Command "/message" was invoked')
-        await ctx.respond("This information is top-secret.")
+        # Try to resolve the clan identifier. If not valid, we would want to notify.
+        detail = BNET.get_group_by_id(id)
 
-    @grant.error
-    @revoke.error
-    @roles.error
-    @command.error
-    @message.error
+        # Capture message information and generate a state.
+        state = generate_state()
+        purpose = ENUM_ADMIN_REGISTRATION
+        data = {
+            'state': state,
+            'guild_id': str(ctx.guild.id),
+            'request_id': id,
+            'request_display': f"{detail.get('name')}#{id}",
+            'purpose': purpose,
+            'requested_at': get_current_time()
+        }
+        
+        # Insert this data into the store.
+        DATABASE.insert('transactions', data)
+
+        # Use state to produce an authorisation URL.
+        url = BNET.get_authorisation_url(state)
+
+        # Generate a message embed.
+        embed = discord.Embed(
+            title='Ecumene Registration',
+            url=url,
+            description=f"Your request for elevated access has been noted. Please authorise accordingly."
+        )
+
+        # Respond to the initial command.
+        message = await ctx.author.send(embed=embed)
+
+        # Obtain channel and message information that was just sent.
+        # Update transaction record to include this information.
+        info = {
+            'channel_id': str(message.channel.id),
+            'message_id': str(message.id)
+        }
+        update_transaction(DATABASE, info, state)
+        self.log.info('Registration now awaiting web response...')
+
+        # Close out context.
+        await ctx.respond("Priviledge escalation has begun. Enact impulse.", ephemeral=True)
+
+    @register.error
     async def admin_error(self, ctx: discord.ApplicationContext, error):
         self.log.info(error)
         if isinstance(error, CheckFailure):

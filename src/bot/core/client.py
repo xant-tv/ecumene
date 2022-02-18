@@ -3,6 +3,7 @@ import discord
 import logging
 
 from bot.core.cogs.admin import Admin
+from bot.core.cogs.guild import Guild
 from bot.core.cogs.identity import Identity
 from bot.core.cogs.example import Example
 
@@ -22,6 +23,7 @@ class EcumeneBot():
         # Add all commands to bot via their respective Cogs.
         self.client.add_cog(Identity(self.log))
         self.client.add_cog(Admin(self.log))
+        self.client.add_cog(Guild(self.log))
         self.client.add_cog(Example(self.log))
 
         # Add our on-ready event listener.

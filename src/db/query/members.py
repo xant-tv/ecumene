@@ -2,25 +2,6 @@ from sqlalchemy import select, update, delete
 
 from db.client import DatabaseService
 
-def get_transaction(service: DatabaseService, state):
-    table = service.retrieve_model('transactions')
-    qry = (
-        select(table).
-            where(getattr(table.c, 'state') == state)
-    )
-    result = service.select(qry)
-    return result
-
-def update_transaction(service: DatabaseService, values, state):
-    table = service.retrieve_model('transactions')
-    qry = (
-        update(table).
-            where(getattr(table.c, 'state') == state).
-            values(values)
-    )
-    result = service.execute(qry)
-    return result
-
 def get_member_by_id(service: DatabaseService, target_column, id):
     table = service.retrieve_model('members')
     qry = (
@@ -51,7 +32,7 @@ def update_member_details(service: DatabaseService, on, data):
     table = service.retrieve_model('members')
     qry = (
         update(table).
-            where(getattr(table.c, 'on') == match_id).
+            where(getattr(table.c, on) == match_id).
             values(data)
     )
     result = service.execute(qry)
@@ -79,4 +60,3 @@ def insert_or_update_member(service: DatabaseService, data):
 
     # New member details.
     return insert_member_details(service, data)
-    

@@ -15,7 +15,12 @@
                         "type": "bigint"
                     },
                     {
-                        "name": "discord_id",
+                        "name": "request_id",
+                        "type": "string",
+                        "size": 100
+                    },
+                    {
+                        "name": "guild_id",
                         "type": "string",
                         "size": 100
                     },
@@ -30,7 +35,7 @@
                         "size": 100
                     },
                     {
-                        "name": "req_display_name",
+                        "name": "request_display",
                         "type": "string",
                         "size": 60
                     },

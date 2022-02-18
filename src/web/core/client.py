@@ -30,3 +30,8 @@ class EcumeneWeb():
 
     def log_request(self, request, response):
         self.log.info(f'{request.remote_addr} | {request.scheme.upper()} | {request.method} | {request.full_path} | {response.status}')
+
+    def start(self):
+        self.client.run(
+            port=os.getenv('WEB_PORT', 8080)
+        )

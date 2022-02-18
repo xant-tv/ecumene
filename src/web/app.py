@@ -46,7 +46,7 @@ def success():
 # This route will serve the admin success page.
 @client.route("/admin", methods=['GET'])
 def admin():
-    return render_template('view/reg-admin.html')
+    return render_template('view/reg-admin.html', displayName=request.args.get('displayName'))
 
 # On failure we want to serve a failure page but still status this as an internal error code.
 @client.route("/failure", methods=['GET'])
@@ -63,7 +63,7 @@ def login():
         elif purpose == ENUM_USER_REGISTRATION:
             return redirect(url_for('success', displayName=display))
         elif purpose == ENUM_ADMIN_REGISTRATION:
-            return redirect(url_for('admin'))
+            return redirect(url_for('admin', displayName=display))
         else:
             raise ValueError('Transaction did not specify purpose.')
     except Exception as exc:
@@ -79,9 +79,9 @@ def after_request(response):
     ecumene.log_request(request, response)
     return response
 
-def start(*args, **kwargs):
+def start():
     """Callable to run application."""
-    client.run(*args, **kwargs)
+    ecumene.start()
 
 if __name__ == '__main__':
     start()

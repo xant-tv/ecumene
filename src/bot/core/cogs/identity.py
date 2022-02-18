@@ -5,7 +5,7 @@ from discord.ext import commands
 
 from bot.core.checks import EcumeneCheck
 from bot.core.shared import DATABASE, BNET, GUILDS
-from db.query import update_transaction
+from db.query.transactions import update_transaction
 from util.encrypt import generate_state
 from util.time import get_current_time
 from util.enum import ENUM_USER_REGISTRATION
@@ -40,8 +40,9 @@ class Identity(commands.Cog):
         purpose = ENUM_USER_REGISTRATION
         data = {
             'state': state,
-            'discord_id': str(ctx.author.id),
-            'req_display_name': str(ctx.author),
+            'guild_id': str(ctx.guild.id),
+            'request_id': str(ctx.author.id),
+            'request_display': str(ctx.author),
             'purpose': purpose,
             'requested_at': get_current_time()
         }
