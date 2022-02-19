@@ -12,6 +12,11 @@ HIGH_PRIORITY = 2
 LOW_PRIORITY = 3
 NO_PRIORITY = 4
 
+TOKEN_REFRESH_SCHEDULE = 15*60
+CLEAN_ADMIN_SCHEDULE = 24*60*60
+
+TOKEN_PROCESSING_BUFFER = 5*60
+
 class EcumeneScheduler():
 
     def __init__(self):
@@ -32,13 +37,13 @@ class EcumeneScheduler():
         self.refresh_tokens()
 
     # This task must be run every fifteen minutes!
-    def refresh_tokens(self, delay=15*60):
+    def refresh_tokens(self, delay=TOKEN_REFRESH_SCHEDULE):
         """Refresh all stored database tokens."""
         self.log.info('Running "refresh_tokens" scheduled task...')
 
         # Get tokens either already expired or close to expiry.
         # These tokens must be able to be refreshed.
-        records = get_tokens_to_refresh(self.db, delay)
+        records = get_tokens_to_refresh(self.db, delay, TOKEN_PROCESSING_BUFFER)
         if records:
             self.log.info(f"Refreshing {len(records.get('admin_id'))} administrator credentials")
             
@@ -65,7 +70,7 @@ class EcumeneScheduler():
             self.refresh_tokens
         )
 
-    def clean_admin_cache(self, delay=24*60*60):
+    def clean_admin_cache(self, delay=CLEAN_ADMIN_SCHEDULE):
         """Remove cached administrator tokens that are no longer referenced."""
         self.log.info('Running "clean_admin_cache" scheduled task...')
 
@@ -76,7 +81,7 @@ class EcumeneScheduler():
             delete_orphans(self.db)
 
         # Dead credentials are still referenced so we only check those.
-        dead = get_dead(self.db)
+        dead = get_dead(self.db, TOKEN_PROCESSING_BUFFER)
         if dead:
             self.log.info(f"Found {len(dead.get('admin_id'))} dead credentials")
             

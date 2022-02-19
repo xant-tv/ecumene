@@ -47,10 +47,10 @@ def insert_or_update_admin(service: DatabaseService, data):
     # New admin details.
     return insert_admin_details(service, data)
 
-def get_tokens_to_refresh(service: DatabaseService, delay):
+def get_tokens_to_refresh(service: DatabaseService, delay, process_buffer):
     table = service.retrieve_model('admins')
-    access_expiry_time = get_current_time() + (1000 * delay) + (1000 * 5 * 60) # Add a five minute buffer.
-    refresh_expiry_time = get_current_time() + (1000 * 5 * 60) # Use the same buffer.
+    access_expiry_time = get_current_time() + (1000 * delay) + (1000 * process_buffer) # Add a five minute buffer.
+    refresh_expiry_time = get_current_time() + (1000 * process_buffer) # Use the same buffer.
     qry = (
         select(table).
             filter(
@@ -90,10 +90,10 @@ def delete_orphans(service: DatabaseService):
     result = service.execute(qry)
     return result
 
-def get_dead(service: DatabaseService):
+def get_dead(service: DatabaseService, process_buffer):
     """Get all dead credentials."""
     table = service.retrieve_model('admins')
-    refresh_expiry_time = get_current_time() + (1000 * 5 * 60) # Apply a small buffer - no way these refresh any time soon.
+    refresh_expiry_time = get_current_time() + (1000 * process_buffer) # Apply a small buffer - no way these refresh any time soon.
     qry = (
         select(table).
             filter(table.c.refresh_expires_at <= refresh_expiry_time)
