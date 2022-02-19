@@ -1,6 +1,7 @@
 from sqlalchemy import select, update, delete
 
 from db.client import DatabaseService
+from util.time import get_current_time
 
 def get_admin_by_id(service: DatabaseService, target_column, id):
     table = service.retrieve_model('admins')
@@ -45,3 +46,53 @@ def insert_or_update_admin(service: DatabaseService, data):
 
     # New admin details.
     return insert_admin_details(service, data)
+
+def get_tokens_to_refresh(service: DatabaseService, delay):
+    table = service.retrieve_model('admins')
+    expiry_time = get_current_time() + (1000 * delay) + (1000 * 5 * 60) # Add a five minute buffer.
+    qry = (
+        select(table).
+            filter(table.c.access_expires_at <= expiry_time)
+    )
+    result = service.select(qry)
+    return result
+
+def get_orphans(service: DatabaseService):
+    """Find all administrator credentials not used by a clan."""
+    admins = service.retrieve_model('admins')
+    clans = service.retrieve_model('clans')
+    subqry = (
+        select(clans.c.admin_id) # Only need the admin_id column from this table.
+    )
+    qry = (
+        select(admins).
+            where(admins.c.admin_id.not_in(subqry)) # Check the not_in condition using the subquery.
+    )
+    result = service.select(qry)
+    return result
+
+def delete_orphans(service: DatabaseService):
+    """Remove all administrator credentials not used by a clan."""
+    admins = service.retrieve_model('admins')
+    clans = service.retrieve_model('clans')
+    subqry = (
+        select(clans.c.admin_id)
+    )
+    # Same as the getter but executes a delete this time.
+    qry = (
+        delete(admins).
+            where(admins.c.admin_id.not_in(subqry))
+    )
+    result = service.execute(qry)
+    return result
+
+def get_dead(service: DatabaseService):
+    """Get all dead credentials."""
+    table = service.retrieve_model('admins')
+    expiry_time = get_current_time()
+    qry = (
+        select(table).
+            filter(table.c.refresh_expires_at <= expiry_time)
+    )
+    result = service.select(qry)
+    return result

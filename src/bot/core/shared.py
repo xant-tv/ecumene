@@ -12,15 +12,14 @@ GUILDS = get_guild_ids()
 # All commands mapped as combinations of:
 #  <display>:<internal>
 DICT_OF_ALL_COMMANDS = {
+    '/guild': 'guild.*',
+    '/guild grant': 'guild.grant',
+    '/guild revoke': 'guild.revoke',
+    '/guild roles': 'guild.roles',
+    '/guild command': 'guild.command',
     '/admin': 'admin.*',
+    '/admin register': 'admin.register',
     '/admin grant': 'admin.grant',
     '/admin revoke': 'admin.revoke',
-    '/admin roles': 'admin.roles',
-    '/admin command': 'admin.command',
-    '/admin clan': 'admin.clan.*',
-    '/admin clan register': 'admin.clan.register',
-    '/admin clan grant': 'admin.clan.grant',
-    '/admin clan revoke': 'admin.clan.revoke',
-    '/admin clan list': 'admin.clan.list',
-    '/admin message': 'admin.message' # Remove this eventually...
+    '/admin list': 'admin.list',
 }
