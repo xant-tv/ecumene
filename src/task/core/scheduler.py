@@ -37,12 +37,12 @@ class EcumeneScheduler():
         self.log.info('Running "refresh_tokens" scheduled task...')
 
         # Get tokens either already expired or close to expiry.
+        # These tokens must be able to be refreshed.
         records = get_tokens_to_refresh(self.db, delay)
         if records:
             self.log.info(f"Refreshing {len(records.get('admin_id'))} administrator credentials")
             
             # Naively loop these for now - shouldn't take long in practice.
-            # TODO: Handle cases where the refresh is expired and the credential is dead.
             for admin_id, refresh_token in zip(records.get('admin_id'), records.get('refresh_token')):
                 request_time = get_current_time()
                 token_data = self.bnet.refresh_token(refresh_token)
