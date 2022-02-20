@@ -34,6 +34,9 @@ class Identity(commands.Cog):
         """Register with Ecumene leadership."""
         self.log.info('Command "/register" was invoked')
 
+        # Defer response until processing is done.
+        await ctx.defer(ephemeral=True)
+
         # Capture message information and generate a state.
         state = generate_state()
         purpose = ENUM_USER_REGISTRATION
@@ -72,7 +75,4 @@ class Identity(commands.Cog):
         self.log.info('Registration now awaiting web response...')
 
         # Close out context.
-        await ctx.respond("Negotiations have begun. Enact impulse.", ephemeral=True)
-
-    # CONTAINS /register and /whoami
-    pass
+        await ctx.respond("Negotiations have begun. Enact impulse.")

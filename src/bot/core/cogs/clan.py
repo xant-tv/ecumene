@@ -85,6 +85,8 @@ class Clan(commands.Cog):
 
             # Extract database member information.
             records = get_members_matching(DATABASE, details['bnet_id'].to_list())
+            if not records:
+                continue
             for user_id in records.get('discord_id'):
                 # Capture user name from server.
                 user = await ctx.guild.fetch_member(user_id)

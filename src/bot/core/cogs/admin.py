@@ -52,7 +52,7 @@ class Admin(commands.Cog):
         self.log.info('Command "/admin register" was invoked')
 
         # Defer response until processing is done.
-        await ctx.defer()
+        await ctx.defer(ephemeral=True)
 
         # Try to resolve the clan identifier. If not valid, we would want to notify.
         detail = BNET.get_group_by_id(clan)
@@ -96,10 +96,10 @@ class Admin(commands.Cog):
         self.log.info('Registration now awaiting web response...')
 
         # Close out context.
-        await ctx.respond("Priviledge escalation has begun. Enact impulse.", ephemeral=True)
+        await ctx.respond("Privilege escalation has begun. Enact impulse.")
 
     @register.error
     async def admin_error(self, ctx: discord.ApplicationContext, error):
         self.log.info(error)
         if isinstance(error, CheckFailure):
-            await ctx.respond('Insufficient privileges to perform this action.')
+            await ctx.respond('Insufficient privileges to perform this action.', ephemeral=True)

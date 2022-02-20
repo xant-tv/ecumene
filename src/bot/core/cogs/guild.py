@@ -126,4 +126,4 @@ class Guild(commands.Cog):
     async def guild_error(self, ctx: discord.ApplicationContext, error):
         self.log.info(error)
         if isinstance(error, CheckFailure):
-            await ctx.respond('Insufficient privileges to perform this action.')
+            await ctx.respond('Insufficient privileges to perform this action.', ephemeral=True)
