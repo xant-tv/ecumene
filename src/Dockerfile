@@ -58,7 +58,8 @@ RUN pipenv install && pipenv install --system
 
 # User setup
 RUN groupadd -r ecumene \
-    && useradd -r -g ecumene ecumene
+    && useradd -r -g ecumene ecumene \
+    && chown -R ecumene:ecumene .
 USER ecumene:ecumene
 
 ENTRYPOINT ["/bin/bash", "entrypoint.sh"]
