@@ -3,11 +3,11 @@ from sqlalchemy import select, update, delete
 from db.client import DatabaseService
 from util.time import get_current_time
 
-def get_admin_by_id(service: DatabaseService, target_column, id):
+def get_admin_by_id(service: DatabaseService, id):
     table = service.retrieve_model('admins')
     qry = (
         select(table).
-            where(getattr(table.c, target_column) == id)
+            where(table.c.admin_id == id)
     )
     result = service.select(qry)
     return result
@@ -38,7 +38,7 @@ def update_admin_details(service: DatabaseService, on, data):
 def insert_or_update_admin(service: DatabaseService, data):
     """Check to see if administrator details exist before updating."""
     # Evaluate length of returns. If at least one record is returned then match.
-    match_admin = get_admin_by_id(service, 'admin_id', data.get('admin_id'))
+    match_admin = get_admin_by_id(service, data.get('admin_id'))
 
     # If administrator exists, then run update.
     if match_admin:

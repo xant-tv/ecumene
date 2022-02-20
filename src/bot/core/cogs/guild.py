@@ -5,7 +5,7 @@ from discord.commands.errors import CheckFailure
 from discord.ext import commands
 
 from bot.core.checks import EcumeneCheck
-from bot.core.shared import GUILDS, DICT_OF_ALL_COMMANDS
+from bot.core.shared import DICT_OF_ALL_COMMANDS
 
 CHECKS = EcumeneCheck()
 
@@ -28,8 +28,7 @@ class Guild(commands.Cog):
     # Define a top-level command group.
     guild = SlashCommandGroup(
         "guild", 
-        "Restricted guild configuration commands.", 
-        guild_ids=GUILDS
+        "Restricted guild configuration commands."
     )
 
     # Grant function to configure per-role permissions.
@@ -39,8 +38,7 @@ class Guild(commands.Cog):
         options=[
             discord.Option(discord.Role, name='role', description="Role to award grant to."),
             discord.Option(str, name='command', description='Command to grant permissions for.', choices=sorted(DICT_OF_ALL_COMMANDS.keys()))
-        ], 
-        guild_ids=GUILDS
+        ]
     )
     @commands.check_any(
         commands.check(CHECKS.user_has_role_permission),
@@ -59,8 +57,7 @@ class Guild(commands.Cog):
         options=[
             discord.Option(discord.Role, name='role', description="Role to revoke permissions from."),
             discord.Option(str, name='command', description='Command to revoke access to.', choices=sorted(DICT_OF_ALL_COMMANDS.keys()))
-        ], 
-        guild_ids=GUILDS
+        ]
     )
     @commands.check_any(
         commands.check(CHECKS.user_has_role_permission),
@@ -78,8 +75,7 @@ class Guild(commands.Cog):
         description="List all roles able to execute a command.",
         options=[
             discord.Option(str, name='command', description='Command to list role permissions for.', choices=sorted(DICT_OF_ALL_COMMANDS.keys()))
-        ], 
-        guild_ids=GUILDS
+        ]
     )
     @commands.check_any(
         commands.check(CHECKS.user_has_role_permission),
@@ -97,8 +93,7 @@ class Guild(commands.Cog):
         description="List all commands able to executed by a role.",
         options=[
             discord.Option(discord.Role, name='role', description='Role to list command permissions for.')
-        ], 
-        guild_ids=GUILDS
+        ]
     )
     @commands.check_any(
         commands.check(CHECKS.user_has_role_permission),
@@ -112,8 +107,7 @@ class Guild(commands.Cog):
     # Demonstration admin-restricted role-based access commmand.
     @guild.command(
         name='message', 
-        description="Receive a top-secret communication.", 
-        guild_ids=GUILDS
+        description="Receive a top-secret communication."
     )
     @commands.check_any(
         commands.check(CHECKS.user_has_role_permission),

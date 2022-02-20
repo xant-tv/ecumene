@@ -45,7 +45,7 @@ class EcumeneScheduler():
         # These tokens must be able to be refreshed.
         records = get_tokens_to_refresh(self.db, delay, TOKEN_PROCESSING_BUFFER)
         if records:
-            self.log.info(f"Refreshing {len(records.get('admin_id'))} administrator credentials")
+            self.log.info(f"Refreshing {len(records.get('admin_id'))} administrator credential(s)")
             
             # Naively loop these for now - shouldn't take long in practice.
             for admin_id, refresh_token in zip(records.get('admin_id'), records.get('refresh_token')):
@@ -77,13 +77,13 @@ class EcumeneScheduler():
         # Get orphans first just to log if any are present.
         orphans = get_orphans(self.db)
         if orphans:
-            self.log.info(f"Found {len(orphans.get('admin_id'))} orphaned credentials")
+            self.log.info(f"Found {len(orphans.get('admin_id'))} orphaned credential(s)")
             delete_orphans(self.db)
 
         # Dead credentials are still referenced so we only check those.
         dead = get_dead(self.db, TOKEN_PROCESSING_BUFFER)
         if dead:
-            self.log.info(f"Found {len(dead.get('admin_id'))} dead credentials")
+            self.log.info(f"Found {len(dead.get('admin_id'))} dead credential(s)")
             
             # TODO: There will need to be a message to Discord to notify of expiry.
             # This will have to wait until we have notification functions in place.

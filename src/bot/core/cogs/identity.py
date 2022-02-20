@@ -4,7 +4,7 @@ from discord.commands import slash_command
 from discord.ext import commands
 
 from bot.core.checks import EcumeneCheck
-from bot.core.shared import DATABASE, BNET, GUILDS
+from bot.core.shared import DATABASE, BNET
 from db.query.transactions import update_transaction
 from util.encrypt import generate_state
 from util.time import get_current_time
@@ -28,8 +28,7 @@ class Identity(commands.Cog):
 
     @slash_command(
         name='register', 
-        description="Begin negotiations with Ecumene.", 
-        guild_ids=GUILDS
+        description="Begin negotiations with Ecumene."
     )
     async def register(self, ctx: discord.ApplicationContext):
         """Register with Ecumene leadership."""

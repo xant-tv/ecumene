@@ -1,7 +1,14 @@
 import os
 import json
 
+TMP_ROOT = 'tmp'
 LOC_ROOT = 'conf/{0}.json'
+
+def file_path(fname):
+    return os.path.join(TMP_ROOT, fname)
+
+def delete_file(path):
+    return os.remove(path)
 
 def load_local(loc):
     with open(LOC_ROOT.format(str(loc))) as locfile:

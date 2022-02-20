@@ -6,7 +6,6 @@ from discord.ext import commands
 
 from bot.core.checks import EcumeneCheck
 from bot.core.interactions import EcumeneView, EcumeneDropdown
-from bot.core.shared import GUILDS
 
 CHECKS = EcumeneCheck()
 
@@ -25,8 +24,7 @@ class Example(commands.Cog):
 
     @slash_command(
         name='ping',
-        description='You have a red dot now.',
-        guild_ids=GUILDS
+        description='You have a red dot now.'
     )
     async def ping(self, ctx: discord.ApplicationContext):
         self.log.info('Command "/ping" invoked')
@@ -40,8 +38,7 @@ class Example(commands.Cog):
             discord.Option(str, name='activity', description="Activity that I'm better than you at.", choices=['Raid', 'Dungeon']),
             discord.Option(discord.Member, description='Identify yourself.', name='user'),
             discord.Option(str, name='meme', description='Memes are always better.', choices=['Yes', 'No'], required=False)
-        ],
-        guild_ids=GUILDS
+        ]
     )
     async def flawless(self, ctx: discord.ApplicationContext, activity: str, user: discord.Member, meme: str):
         self.log.info('Command "/flawless" invoked')
@@ -53,8 +50,7 @@ class Example(commands.Cog):
         description='You made this? I made this! 😀',
         options=[
             discord.Option(str, name='limit', description="Do you limit interactions?", choices=['Yes', 'No']),
-        ],
-        guild_ids=GUILDS 
+        ]
     )
     async def colour(self, ctx: discord.ApplicationContext, limit):
         self.log.info('Command "/colour" was invoked')

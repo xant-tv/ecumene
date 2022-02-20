@@ -20,6 +20,11 @@
                         "size": 100
                     },
                     {
+                        "name": "option_id",
+                        "type": "string",
+                        "size": 100
+                    },
+                    {
                         "name": "guild_id",
                         "type": "string",
                         "size": 100
@@ -114,7 +119,7 @@
                     {
                         "name": "admin_id",
                         "type": "string",
-                        "size": 100,
+                        "size": 30,
                         "primary_key": 1
                     },
                     {
@@ -160,9 +165,14 @@
                         "size": 400
                     },
                     {
-                        "name": "admin_id",
+                        "name": "role_id",
                         "type": "string",
                         "size": 100
+                    },
+                    {
+                        "name": "admin_id",
+                        "type": "string",
+                        "size": 30
                     }
                 ],
                 "constraints": [

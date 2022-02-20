@@ -2,6 +2,15 @@ from sqlalchemy import select, update, delete
 
 from db.client import DatabaseService
 
+def get_all_clans_in_guild(service: DatabaseService, guild_id):
+    table = service.retrieve_model('clans')
+    qry = (
+        select(table).
+            where(table.c.guild_id == guild_id)
+    )
+    result = service.select(qry)
+    return result
+
 def get_clan_in_guild(service: DatabaseService, guild_id, clan_id):
     table = service.retrieve_model('clans')
     qry = (

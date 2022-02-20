@@ -47,6 +47,18 @@ class BungieInterface():
         }
         return headers
 
+    def _get_headers_with_token_(self, token):
+        """Attach token to Bungie.net interaction to assume user responsibility."""
+        # Note that the token is passed into the function and not stored within the class.
+        # This is because we regularly have to rotate tokens or assume user identities.
+        headers = self._get_headers_()
+        headers = {
+            'User-Agent': self._agent_(), # Bungie nicely asks for us to do this.
+            'Authorization': f"Bearer {token}",
+            'X-API-Key': self.key
+        }
+        return headers
+
     def _get_url_(self, *segments, root=None):
         """Build the API path."""
         path = '/'.join(map(str, segments))
@@ -115,3 +127,26 @@ class BungieInterface():
         response = self._execute_(requests.get, url, headers=headers)
         detail = self._strip_outer_(response).get('detail')
         return detail
+
+    def get_members_in_group(self, group_id):
+        url = self._get_url_('GroupV2', group_id, 'Members')
+        headers = self._get_headers_()
+        response = self._execute_(requests.get, url, headers=headers)
+        results = self._strip_outer_(response).get('results')
+        return results
+
+    def get_groups_for_user(self, membership_type, membership_id):
+        # Path parameters support filters(?) and group type respectively.
+        # Just hardcode these for now.
+        url = self._get_url_('GroupV2', 'User', membership_type, membership_id, 0, 1)
+        headers = self._get_headers_()
+        response = self._execute_(requests.get, url, headers=headers)
+        results = self._strip_outer_(response).get('results')
+        return results
+
+    def kick_member_from_group(self, token, group_id, membership_type, membership_id):
+        url = self._get_url_('GroupV2', group_id, 'Members', membership_type, membership_id, 'Kick')
+        headers = self._get_headers_with_token_(token)
+        response = self._execute_(requests.post, url, headers=headers)
+        results = self._strip_outer_(response).get('results')
+        return results

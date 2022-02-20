@@ -5,7 +5,7 @@ from discord.commands.errors import CheckFailure
 from discord.ext import commands
 
 from bot.core.checks import EcumeneCheck
-from bot.core.shared import DATABASE, BNET, GUILDS, DICT_OF_ALL_COMMANDS
+from bot.core.shared import DATABASE, BNET, DICT_OF_ALL_COMMANDS
 from db.query.transactions import update_transaction
 from util.encrypt import generate_state
 from util.time import get_current_time
@@ -17,11 +17,10 @@ CHECKS = EcumeneCheck()
 # TODO: All functions here will require an audit log as well.
 
 class Admin(commands.Cog):
-
     """
     Cog holding all admin-related functions.
     These commands are used for registering clan administration:
-      - /admin register <clan> (basically /register but for a destiny clan)
+      - /admin register <id> <role> (basically /register but for a destiny clan)
       - /admin list (list clans and the roles that administrate them)
       - /admin grant <clan> <role> (allows the selected role to run /clan commands for that clan)
       - /admin revoke <clan> <role> (disallows the selected role from running /clan commands for that clan)
@@ -33,28 +32,30 @@ class Admin(commands.Cog):
     # Define a top-level command group.
     admin = SlashCommandGroup(
         "admin", 
-        "Restricted clan administration commands.", 
-        guild_ids=GUILDS
+        "Restricted clan administration commands."
     )
 
     @admin.command(
         name='register',
         description='Register a clan with Ecumene.',
         options=[
-            discord.Option(str, name='id', description='Group identifier for the clan you wish to register.', required=True)
-        ],
-        guild_ids=GUILDS
+            discord.Option(str, name='clan', description='Group identifier for the clan you wish to register.'),
+            discord.Option(discord.Role, name='role', description='Role to attach to this clan.')
+        ]
     )
     @commands.check_any(
         commands.check(CHECKS.user_has_role_permission),
         commands.check(CHECKS.user_can_manage_server),
         commands.check(CHECKS.user_is_guild_owner)
     )
-    async def register(self, ctx: discord.ApplicationContext, id: str):
+    async def register(self, ctx: discord.ApplicationContext, clan: str, role: discord.Role):
         self.log.info('Command "/admin register" was invoked')
 
+        # Defer response until processing is done.
+        await ctx.defer()
+
         # Try to resolve the clan identifier. If not valid, we would want to notify.
-        detail = BNET.get_group_by_id(id)
+        detail = BNET.get_group_by_id(clan)
 
         # Capture message information and generate a state.
         state = generate_state()
@@ -62,8 +63,9 @@ class Admin(commands.Cog):
         data = {
             'state': state,
             'guild_id': str(ctx.guild.id),
-            'request_id': id,
-            'request_display': f"{detail.get('name')}#{id}",
+            'request_id': clan,
+            'request_display': f"{detail.get('name')}#{clan}",
+            'option_id': str(role.id),
             'purpose': purpose,
             'requested_at': get_current_time()
         }

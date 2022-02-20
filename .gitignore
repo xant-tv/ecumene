@@ -134,6 +134,6 @@ dmypy.json
 .vscode
 .idea
 
-# Ignore some temporary local certs.
+# Ignore some temporary local files.
 certs/
 *.pem

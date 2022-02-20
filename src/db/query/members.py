@@ -60,3 +60,12 @@ def insert_or_update_member(service: DatabaseService, data):
 
     # New member details.
     return insert_member_details(service, data)
+
+def get_members_matching(service: DatabaseService, member_ids):
+    table = service.retrieve_model('members')
+    qry = (
+        select(table).
+            where(table.c.bnet_id.in_(member_ids))
+    )
+    result = service.select(qry)
+    return result

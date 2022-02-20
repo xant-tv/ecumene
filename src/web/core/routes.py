@@ -132,6 +132,7 @@ class EcumeneRouteHandler():
                 'guild_id': result.get('guild_id')[0],
                 'clan_id': result.get('request_id')[0],
                 'clan_name': detail.get('name'),
+                'role_id': result.get('option_id')[0],
                 'admin_id': str(token_data.get('membership_id'))
             }
             insert_or_update_clan(self.db, clan)
