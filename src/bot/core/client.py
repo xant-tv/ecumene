@@ -25,8 +25,8 @@ class EcumeneBot():
         self.token = os.getenv('DISCORD_TOKEN')
 
         # Add all commands to bot via their respective Cogs.
-        self.client.add_cog(Audit(self.log))
-        self.client.add_cog(Guild(self.log))
+        # self.client.add_cog(Audit(self.log))
+        # self.client.add_cog(Guild(self.log))
         self.client.add_cog(Admin(self.log))
         self.client.add_cog(Identity(self.log))
         self.client.add_cog(Clan(self.log))
