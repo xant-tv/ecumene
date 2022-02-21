@@ -70,6 +70,7 @@ class Clan(commands.Cog):
             detail_map = {
                 'bnet_id': list(),
                 'bungie_name': list(),
+                'join_date': list(),
                 'last_online': list()
             }
             records_map = {
@@ -86,8 +87,14 @@ class Clan(commands.Cog):
                 destiny_info = member.get('destinyUserInfo')
                 display_name = bnet_info.get('bungieGlobalDisplayName') or destiny_info.get('bungieGlobalDisplayName')
                 display_code = bnet_info.get('bungieGlobalDisplayNameCode') or destiny_info.get('bungieGlobalDisplayNameCode')
+                join_date = member.get('joinDate')
+                # Leave display names null if they're incomplete.
+                bungie_name = None
+                if display_name and display_code:
+                    bungie_name = f"{display_name}#{str(display_code).zfill(0)}"
                 detail_map['bnet_id'].append(str(bnet_info.get('membershipId')))
-                detail_map['bungie_name'].append(f"{display_name}#{display_code}")
+                detail_map['bungie_name'].append(bungie_name)
+                detail_map['join_date'].append(join_date)
                 detail_map['last_online'].append(member.get('lastOnlineStatusChange'))
             details = make_structure(detail_map)
 
@@ -134,6 +141,7 @@ class Clan(commands.Cog):
             'discord_id',
             'bungie_name',
             'discord_name',
+            'join_date_str',
             'last_online_str', # Created by format_clan_list processing.
             'last_online_rel_str',
             'status'
