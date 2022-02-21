@@ -19,4 +19,9 @@ DICT_OF_ALL_COMMANDS = {
     '/admin grant': 'admin.grant',
     '/admin revoke': 'admin.revoke',
     '/admin list': 'admin.list',
+    '/clan': 'clan.*',
+    '/clan list': 'clan.list',
+    '/clan kick': 'clan.kick',
+    '/clan promote': 'clan.promote',
+    '/clan demote': 'clan.demote',
 }

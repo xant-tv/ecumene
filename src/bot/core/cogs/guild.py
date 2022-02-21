@@ -48,7 +48,7 @@ class Guild(commands.Cog):
     async def grant(self, ctx: discord.ApplicationContext, role: discord.Role, command: str):
         self.log.info('Command "/grant" was invoked')
         permission = DICT_OF_ALL_COMMANDS.get(command)
-        await ctx.respond(f'Grant {permission} to {role.mention}!')
+        await ctx.respond(f'Grant {permission} to {role.mention}!', ephemeral=True)
 
     # Revoker function.
     @guild.command(
@@ -67,7 +67,7 @@ class Guild(commands.Cog):
     async def revoke(self, ctx: discord.ApplicationContext, role: discord.Role, command: str):
         self.log.info('Command "/revoke" was invoked')
         permission = DICT_OF_ALL_COMMANDS.get(command)
-        await ctx.respond(f'Revoke {permission} from {role.mention}!')
+        await ctx.respond(f'Revoke {permission} from {role.mention}!', ephemeral=True)
 
     # List roles by command.
     @guild.command(
@@ -85,7 +85,7 @@ class Guild(commands.Cog):
     async def roles(self, ctx: discord.ApplicationContext, command: str):
         self.log.info('Command "/roles" was invoked')
         permission = DICT_OF_ALL_COMMANDS.get(command)
-        await ctx.respond(f'List roles for {permission}!')
+        await ctx.respond(f'List roles for {permission}!', ephemeral=True)
 
     # List commands by role.
     @guild.command(
@@ -102,7 +102,7 @@ class Guild(commands.Cog):
     )
     async def command(self, ctx: discord.ApplicationContext, role: discord.Role):
         self.log.info('Command "/command" was invoked')
-        await ctx.respond(f'List permissions for {role.mention}!')
+        await ctx.respond(f'List permissions for {role.mention}!', ephemeral=True)
 
     # Demonstration admin-restricted role-based access commmand.
     @guild.command(
@@ -116,7 +116,7 @@ class Guild(commands.Cog):
     )
     async def message(self, ctx: discord.ApplicationContext):
         self.log.info('Command "/message" was invoked')
-        await ctx.respond("This information is top-secret.")
+        await ctx.respond("This information is top-secret.", ephemeral=True)
 
     @grant.error
     @revoke.error
