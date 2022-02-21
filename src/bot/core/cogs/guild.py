@@ -5,7 +5,8 @@ from discord.commands.errors import CheckFailure
 from discord.ext import commands
 
 from bot.core.checks import EcumeneCheck
-from bot.core.shared import DICT_OF_ALL_COMMANDS
+from bot.core.shared import DATABASE, DICT_OF_ALL_COMMANDS
+from db.query.members import check_blacklist, add_user_to_blacklist, remove_user_from_blacklist
 
 CHECKS = EcumeneCheck()
 
@@ -20,6 +21,8 @@ class Guild(commands.Cog):
       - /guild revoke <role> <command> (undoes the grant)
       - /guild roles <command> (list roles with permissions for a command)
       - /guild command <roles> (list commands able to be run by a specific role)
+      - /guild block <user> (add user to guild blacklist)
+      - /guild unblock <user> (remove user from guild blacklist)
     """
     def __init__(self, log):
         self.log = log
@@ -104,25 +107,78 @@ class Guild(commands.Cog):
         self.log.info('Command "/command" was invoked')
         await ctx.respond(f'List permissions for {role.mention}!', ephemeral=True)
 
-    # Demonstration admin-restricted role-based access commmand.
     @guild.command(
-        name='message', 
-        description="Receive a top-secret communication."
+        name='block',
+        description='Block user from clan-related interaction with Ecumene.',
+        options=[
+            discord.Option(discord.Member, name='user', description='User to block.')
+        ]
     )
     @commands.check_any(
         commands.check(CHECKS.user_has_role_permission),
         commands.check(CHECKS.user_can_manage_server),
         commands.check(CHECKS.user_is_guild_owner)
     )
-    async def message(self, ctx: discord.ApplicationContext):
-        self.log.info('Command "/message" was invoked')
-        await ctx.respond("This information is top-secret.", ephemeral=True)
+    async def block(self, ctx: discord.ApplicationContext, user: discord.Member):
+        self.log.info('Command "/guild block" was invoked')
+
+        # Defer response until processing is done.
+        await ctx.defer(ephemeral=True)
+
+        # You cannot block yourself.
+        if user.id == ctx.author.id:
+            await ctx.respond('You cannot block yourself.')
+            return
+
+        # You cannot block the guild owner or people with manage permissions.
+        if user.guild_permissions.manage_guild or ctx.guild.owner_id == ctx.author.id:
+            await ctx.respond('You do not have permissions to block this person.')
+            return
+
+        # Check if the user is already blocked.
+        blacklisted = check_blacklist(DATABASE, str(ctx.guild.id), str(user.id))
+        if blacklisted:
+            await ctx.respond(f"User {user.mention} is already blocked in this server.")
+            return
+
+        # Add user to blacklist.
+        add_user_to_blacklist(DATABASE, str(ctx.guild.id), str(user.id))
+        await ctx.respond(f"User {user.mention} added to server block list.")
+
+    @guild.command(
+        name='unblock',
+        description='Unblock user from clan-related interaction with Ecumene.',
+        options=[
+            discord.Option(discord.Member, name='user', description='User to unblock.')
+        ]
+    )
+    @commands.check_any(
+        commands.check(CHECKS.user_has_role_permission),
+        commands.check(CHECKS.user_can_manage_server),
+        commands.check(CHECKS.user_is_guild_owner)
+    )
+    async def unblock(self, ctx: discord.ApplicationContext, user: discord.Member): 
+        self.log.info('Command "/guild unblock" was invoked')
+
+        # Defer response until processing is done.
+        await ctx.defer(ephemeral=True)       
+
+        # Check if the user is already blocked.
+        blacklisted = check_blacklist(DATABASE, str(ctx.guild.id), str(user.id))
+        if not blacklisted:
+            await ctx.respond(f"User {user.mention} is not blocked in this server.")
+            return
+
+        # Add user to blacklist.
+        remove_user_from_blacklist(DATABASE, str(ctx.guild.id), str(user.id))
+        await ctx.respond(f"User {user.mention} removed from server block list.")
 
     @grant.error
     @revoke.error
     @roles.error
     @command.error
-    @message.error
+    @block.error
+    @unblock.error
     async def guild_error(self, ctx: discord.ApplicationContext, error):
         self.log.info(error)
         if isinstance(error, CheckFailure):

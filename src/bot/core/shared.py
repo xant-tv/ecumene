@@ -6,21 +6,21 @@ from bnet.client import BungieInterface
 DATABASE = DatabaseService()
 BNET = BungieInterface()
 
-# All commands mapped as combinations of:
-#  <display>:<internal>
+# All commands map.
 DICT_OF_ALL_COMMANDS = {
+    # <display>:<internal>
     '/guild': 'guild.*',
     '/guild grant': 'guild.grant', # Will need to support these sooner than I thought.
     '/guild revoke': 'guild.revoke',
     '/guild roles': 'guild.roles',
     '/guild command': 'guild.command',
+    '/guild block': 'guild.block',
+    '/guild unblock': 'guild.unblock',
     '/admin': 'admin.*',
     '/admin register': 'admin.register',
     '/admin grant': 'admin.grant', # Low priority.
     '/admin revoke': 'admin.revoke', # Low priority.
     '/admin list': 'admin.list',
-    '/admin block': 'admin.block',
-    '/admin unblock': 'admin.unblock',
     '/clan': 'clan.*',
     '/clan list': 'clan.list',
     '/clan kick': 'clan.kick',
