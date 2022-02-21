@@ -1,4 +1,5 @@
 import os
+import csv
 import json
 
 TMP_ROOT = 'tmp'
@@ -9,6 +10,9 @@ def file_path(fname):
 
 def delete_file(path):
     return os.remove(path)
+
+def write_file(data, path):
+    data.to_csv(path, index=False, encoding='utf-8-sig', quoting=csv.QUOTE_ALL)
 
 def load_local(loc):
     with open(LOC_ROOT.format(str(loc))) as locfile:

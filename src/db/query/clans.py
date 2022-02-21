@@ -11,12 +11,12 @@ def get_all_clans_in_guild(service: DatabaseService, guild_id):
     result = service.select(qry)
     return result
 
-def get_clan_in_guild(service: DatabaseService, guild_id, clan_id):
+def get_clan_in_guild(service: DatabaseService, guild_id, target_column, clan_id):
     table = service.retrieve_model('clans')
     qry = (
         select(table).
             where(table.c.guild_id == guild_id).
-            where(table.c.clan_id == clan_id)
+            where(getattr(table.c, target_column) == clan_id)
     )
     result = service.select(qry)
     return result
@@ -44,7 +44,7 @@ def update_clan_details(service: DatabaseService, data):
 def insert_or_update_clan(service: DatabaseService, data):
     """Check to see if clan is already being tracked in this guild."""
     # Evaluate length of returns. If at least one record is returned then match.
-    match_clan = get_clan_in_guild(service, data.get('guild_id'), data.get('clan_id'))
+    match_clan = get_clan_in_guild(service, data.get('guild_id'), 'clan_id', data.get('clan_id'))
 
     # If clan exists in guild, run update.
     if match_clan:

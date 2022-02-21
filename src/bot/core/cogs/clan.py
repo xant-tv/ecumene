@@ -3,13 +3,15 @@ import discord
 from discord.commands import slash_command, SlashCommandGroup
 from discord.commands.errors import CheckFailure
 from discord.ext import commands
+from bnet.client import BungieInterfaceError
 
 from bot.core.checks import EcumeneCheck
 from bot.core.shared import DATABASE, BNET, DICT_OF_ALL_COMMANDS
+from bot.core.interactions import EcumeneConfirm
 from db.query.clans import get_all_clans_in_guild, get_clan_in_guild
 from db.query.members import get_members_matching, get_member_by_id
 from db.query.admins import get_admin_by_id
-from util.local import file_path, delete_file
+from util.local import file_path, delete_file, write_file
 from util.encrypt import generate_local
 from util.data import make_empty_structure, make_structure, append_frames, format_clan_list
 
@@ -23,6 +25,8 @@ class Clan(commands.Cog):
       - /clan list <filter: {all|inactive}> (list users in clans and information about them)
       - /clan kick <user> <force_flag> (kick a user from the clan, has interactive prompt but can be forced)
       - /clan join <role> (doesn't actually join the clan, but prompts admin account to send a clan invite)
+      - /clan promote <user> (this should be self-evident)
+      - /clan demote <user> (also this)
     """
     def __init__(self, log):
         self.log = log
@@ -77,30 +81,34 @@ class Clan(commands.Cog):
             results = BNET.get_members_in_group(clan_id)
             for member in results:
                 # Capture identifier and last online activity.
+                # The user's global display information may only be contained in one key! (Why Bungie?!)
                 bnet_info = member.get('bungieNetUserInfo')
+                destiny_info = member.get('destinyUserInfo')
+                display_name = bnet_info.get('bungieGlobalDisplayName') or destiny_info.get('bungieGlobalDisplayName')
+                display_code = bnet_info.get('bungieGlobalDisplayNameCode') or destiny_info.get('bungieGlobalDisplayNameCode')
                 detail_map['bnet_id'].append(str(bnet_info.get('membershipId')))
-                detail_map['bungie_name'].append(f"{bnet_info.get('bungieGlobalDisplayName')}#{bnet_info.get('bungieGlobalDisplayNameCode')}")
+                detail_map['bungie_name'].append(f"{display_name}#{display_code}")
                 detail_map['last_online'].append(member.get('lastOnlineStatusChange'))
             details = make_structure(detail_map)
 
             # Extract database member information.
             records = get_members_matching(DATABASE, details['bnet_id'].to_list())
-            if not records:
-                continue
-            for user_id in records.get('discord_id'):
-                # Capture user name from server.
-                user = await ctx.guild.fetch_member(user_id)
-                records_map['discord_id'].append(user_id)
-                records_map['discord_name'].append(f"{user.name}#{user.discriminator}")
-            struct = make_structure(records)
-            struct['discord_name'] = struct['discord_id'].map(
-                dict(
-                    zip(
-                        records_map.get('discord_id'), 
-                        records_map.get('discord_name')
+            struct = make_empty_structure()
+            if records:            
+                for user_id in records.get('discord_id'):
+                    # Capture user name from server.
+                    user = await ctx.guild.fetch_member(user_id)
+                    records_map['discord_id'].append(user_id)
+                    records_map['discord_name'].append(f"{user.name}#{user.discriminator}")
+                struct = make_structure(records)
+                struct['discord_name'] = struct['discord_id'].map(
+                    dict(
+                        zip(
+                            records_map.get('discord_id'), 
+                            records_map.get('discord_name')
+                        )
                     )
                 )
-            )
 
             # Structure and append additional details.
             clan_members = details.merge(struct, how='outer', on=['bnet_id'])
@@ -134,7 +142,7 @@ class Clan(commands.Cog):
         uid = generate_local()
         fpath = file_path(f"list_{uid}.csv")
         self.log.info(f"Export structure -> {fpath} ({output.shape[0]} records)")
-        output.to_csv(fpath, index=False)
+        write_file(output, fpath)
         
         # Attach this file into the message.
         # Delete from local cache.
@@ -145,7 +153,7 @@ class Clan(commands.Cog):
         name='kick',
         description='Kick the specified user from the clan.',
         options=[
-            discord.Option(discord.Member, name='user', description='Kick specified user from in-game clan.')
+            discord.Option(discord.Member, name='user', description='User to kick from clan.')
         ]
     )
     @commands.check_any(
@@ -160,7 +168,6 @@ class Clan(commands.Cog):
         # Note the ephemeral deferral is required to hide the message.
         await ctx.defer(ephemeral=True)
 
-        # Go from user -> bnet user -> clan -> admin_id
         # Get the member record for this user.
         member = get_member_by_id(DATABASE, 'discord_id', str(user.id))
         if not member:
@@ -177,6 +184,7 @@ class Clan(commands.Cog):
 
         # Extract group information.
         to_kick = list()
+        to_kick_name = list()
         for result in results:
             group_info = result.get('group')
             member_info = result.get('member')
@@ -185,7 +193,7 @@ class Clan(commands.Cog):
             user_membership_type = member_info.get('membershipType')
 
             # Pull the group administrator and credentials.
-            clan = get_clan_in_guild(DATABASE, str(ctx.guild.id), group_id)
+            clan = get_clan_in_guild(DATABASE, str(ctx.guild.id), 'clan_id', group_id)
             if not clan:
                 continue
 
@@ -197,10 +205,30 @@ class Clan(commands.Cog):
                 'membership_type': user_membership_type
             }
             to_kick.append(info)
+            to_kick_name.append(f"**{group_name}#{group_id}**")
 
         # This clan isn't managed by the bot in this guild.
         if not to_kick:
-            await ctx.respond(f"User {user.mention} clans are not managed by Ecumene.")
+            await ctx.respond(f"Clans for user {user.mention} are not managed by Ecumene.")
+            return
+
+        # Create confirmation menu.
+        view = EcumeneConfirm()
+        message = await ctx.respond(f"This will kick {user.mention} from {', '.join(to_kick_name)}. Are you sure?", view=view)
+    
+        # Wait for the view to stop listening for input.
+        await view.wait()
+        if view.value is None:
+            # The view timed out - not sure how long the interaction lives for.
+            # await message.delete()
+            await message.edit('Your request has timed out.', view=None)
+        elif view.value:
+            # Confirmed - continue function execution.
+            pass
+        else:
+            # Cancelled - remove view and respond to user. Exit command.
+            # await message.delete()
+            await message.edit('Your request has been cancelled.', view=None)
             return
 
         # Now actually kick user from managed clans assuming the appropriate admin.
@@ -214,17 +242,58 @@ class Clan(commands.Cog):
             # Now we can kick the user directly.
             group_id = kickable.get('group_id')
             group_name = kickable.get('group_name')
-            BNET.kick_member_from_group(
-                admin.get('access_token')[0],
-                kickable.get('group_id'),
-                kickable.get('user_membership_type'),
-                member.get('destiny_id')[0]
-            )
-            kicked.append(f"**{group_name}#{group_id}**")
+            try:
+                BNET.kick_member_from_group(
+                    admin.get('access_token')[0],
+                    kickable.get('group_id'),
+                    kickable.get('user_membership_type'),
+                    member.get('destiny_id')[0]
+                )
+                kicked.append(f"**{group_name}#{group_id}**")
+            except BungieInterfaceError:
+                # Kick failed, close out nicely.
+                pass
+
+        if not kicked:
+            await message.edit(f"Unable to kick {user.mention}. Check clan admin configuration.", view=None)
+            return
 
         # Format success message and send.
-        await ctx.respond(f"Kicked {user.mention} from {', '.join(kicked)}.")
+        await message.edit(f"Kicked {user.mention} from {', '.join(kicked)}.", view=None)
 
+    @clan.command(
+        name='promote',
+        description='Promote the specific user within the clan.',
+        options=[
+            discord.Option(discord.Member, name='user', description='User to promote.')
+        ]
+    )
+    @commands.check_any(
+        commands.check(CHECKS.user_has_role_permission),
+        commands.check(CHECKS.user_can_manage_server),
+        commands.check(CHECKS.user_is_guild_owner)
+    )
+    async def promote(self, ctx: discord.ApplicationContext, user: discord.Member):
+        self.log.info('Command "/clan promote" was invoked')
+        await ctx.respond(f"You have discovered a secret. This channel is not yet open to you.", ephemeral=True)
+
+    @clan.command(
+        name='demote',
+        description='Demote the specific user within the clan.',
+        options=[
+            discord.Option(discord.Member, name='user', description='User to demote.')
+        ]
+    )
+    @commands.check_any(
+        commands.check(CHECKS.user_has_role_permission),
+        commands.check(CHECKS.user_can_manage_server),
+        commands.check(CHECKS.user_is_guild_owner)
+    )
+    async def demote(self, ctx: discord.ApplicationContext, user: discord.Member):
+        self.log.info('Command "/clan demote" was invoked')
+        await ctx.respond(f"You have discovered a secret. This channel is not yet open to you.", ephemeral=True)
+
+    # Note no checks for this command.
     @clan.command(
         name='join',
         description='Ask to join a specific clan.',
@@ -232,7 +301,53 @@ class Clan(commands.Cog):
             discord.Option(discord.Role, name='clan', description='Clan you wish to join.')
         ]
     )
-    async def join(self, ctx: discord.ApplicationContext, clan: str):
+    async def join(self, ctx: discord.ApplicationContext, clan: discord.Role):
         self.log.info('Command "/clan join" was invoked')
-        # Placeholder until the logic here is actually written.
-        await ctx.respond(f"You have discovered a secret. This channel is not yet open to you.", ephemeral=True)
+        
+        # Defer response until processing is done.
+        await ctx.defer(ephemeral=True)
+
+        # Get the member record for this user.
+        member = get_member_by_id(DATABASE, 'discord_id', str(ctx.author.id))
+        if not member:
+            await ctx.respond(f"You are not registered with Ecumene. Please register to gain access to this service.")
+            return
+
+        # Identify the clan based on the role mentioned.
+        # Pull the group administrator and credentials.
+        group = get_clan_in_guild(DATABASE, str(ctx.guild.id), 'role_id', str(clan.id))
+        if not group:
+            await ctx.respond(f"There is no clan associated with {clan.mention}.")
+            return
+        group_id = group.get('clan_id')[0]
+        group_name = group.get('clan_name')[0]
+
+        # TODO: Needs a retry block in case of background token refresh causing a race condition. 
+        admin = get_admin_by_id(DATABASE, group.get('admin_id')[0])
+
+        # Try and send the invite.
+        # There is a potential this will send an invite to the wrong platform.
+        # That depends on what membership type value is cached.
+        try:
+            BNET.invite_user_to_group(
+                admin.get('access_token')[0],
+                group_id,
+                member.get('destiny_mtype')[0],
+                member.get('destiny_id')[0]
+            )
+        except BungieInterfaceError:
+            # Sending invite failed - close out nicely.
+            await ctx.respond(f"Could not send a request to join {clan.mention}. The clan might be full. Contact your nearest admin.")
+            return
+
+        # Format success message and send.
+        await ctx.respond(f"Invite to join **{group_name}#{group_id}** has been sent.")
+
+    @list.error
+    @kick.error
+    @promote.error
+    @demote.error
+    async def clan_error(self, ctx: discord.ApplicationContext, error):
+        self.log.info(error)
+        if isinstance(error, CheckFailure):
+            await ctx.respond('Insufficient privileges to perform this action.', ephemeral=True)

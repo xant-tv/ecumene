@@ -1,6 +1,25 @@
 import logging
 import discord
 
+# Defines a confirmation dialog.
+class EcumeneConfirm(discord.ui.View):
+
+    def __init__(self):
+        super().__init__()
+        self.value = None
+
+    # On press set inner value and stop the view from listening to more input.
+    @discord.ui.button(label="Kick", style=discord.ButtonStyle.red)
+    async def confirm(self, button: discord.ui.Button, interaction: discord.Interaction):
+        self.value = True
+        self.stop()
+
+    # Similar except record cancel.
+    @discord.ui.button(label="Cancel", style=discord.ButtonStyle.grey)
+    async def cancel(self, button: discord.ui.Button, interaction: discord.Interaction):
+        self.value = False
+        self.stop()
+
 # Defines a custom Select containing colour options
 # that the user can choose. The callback function
 # of this class is called when the user changes their choice

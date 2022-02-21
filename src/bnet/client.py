@@ -7,11 +7,13 @@ from urllib.parse import urlencode
 from types import SimpleNamespace
 
 MTYPES = dict(xbox=1, playstation=2, steam=3, blizzard=4, stadia=5, bungie=254)
+MLEVELS = dict(beginner=1, member=2, admin=3, founder=5) # Just like with Halo - Bungie never made a 4th.
 
 class BungieEnumerations():
     
     def __init__(self):
         self.mtype = SimpleNamespace(**MTYPES)
+        self.mlevels = SimpleNamespace(**MLEVELS)
 
 class BungieInterfaceError(Exception):
 
@@ -143,6 +145,14 @@ class BungieInterface():
         response = self._execute_(requests.get, url, headers=headers)
         results = self._strip_outer_(response).get('results')
         return results
+
+    def invite_user_to_group(self, token, group_id, membership_type, membership_id):
+        url = self._get_url_('GroupV2', group_id, 'Members', 'IndividualInvite', membership_type, membership_id)
+        headers = self._get_headers_with_token_(token)
+        # For some reason this expects a body, even if it's empty.
+        response = self._execute_(requests.post, url, headers=headers, json={})
+        content = self._strip_outer_(response)
+        return content
 
     def kick_member_from_group(self, token, group_id, membership_type, membership_id):
         url = self._get_url_('GroupV2', group_id, 'Members', membership_type, membership_id, 'Kick')
