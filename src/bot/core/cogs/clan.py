@@ -178,6 +178,11 @@ class Clan(commands.Cog):
         # Note the ephemeral deferral is required to hide the message.
         await ctx.defer(ephemeral=True)
 
+        # Make sure the user isn't trying to kick themselves.
+        if user.id == ctx.author.id:
+            await ctx.respond('You are not allowed to kick yourself.')
+            return
+
         # Get the member record for this user.
         member = get_member_by_id(DATABASE, 'discord_id', str(user.id))
         if not member:
@@ -311,6 +316,12 @@ class Clan(commands.Cog):
             discord.Option(discord.Role, name='clan', description='Clan you wish to join.')
         ]
     )
+    @commands.check(CHECKS.user_is_not_blacklisted)
+    @commands.check_any(
+        commands.check(CHECKS.user_has_role_permission),
+        commands.check(CHECKS.user_can_manage_server),
+        commands.check(CHECKS.user_is_guild_owner)
+    )
     async def join(self, ctx: discord.ApplicationContext, clan: discord.Role):
         self.log.info('Command "/clan join" was invoked')
         
@@ -357,6 +368,7 @@ class Clan(commands.Cog):
     @kick.error
     @promote.error
     @demote.error
+    @join.error
     async def clan_error(self, ctx: discord.ApplicationContext, error):
         self.log.info(error)
         if isinstance(error, CheckFailure):

@@ -6,6 +6,7 @@ from discord.ext import commands
 
 from bot.core.checks import EcumeneCheck
 from bot.core.shared import DATABASE, BNET, DICT_OF_ALL_COMMANDS
+from db.query.members import check_blacklist, add_user_to_blacklist, remove_user_from_blacklist
 from db.query.transactions import update_transaction
 from util.encrypt import generate_state
 from util.time import get_current_time
@@ -24,6 +25,8 @@ class Admin(commands.Cog):
       - /admin list (list clans and the roles that administrate them)
       - /admin grant <clan> <role> (allows the selected role to run /clan commands for that clan)
       - /admin revoke <clan> <role> (disallows the selected role from running /clan commands for that clan)
+      - /admin block <user> (add user to blacklist)
+      - /admin unblock <user> (remove user from blacklist)
     """
     def __init__(self, log):
         self.log = log
@@ -98,7 +101,75 @@ class Admin(commands.Cog):
         # Close out context.
         await ctx.respond("Privilege escalation has begun. Enact impulse.")
 
+    @admin.command(
+        name='block',
+        description='Block user from clan-related interaction with Ecumene.',
+        options=[
+            discord.Option(discord.Member, name='user', description='User to block.')
+        ]
+    )
+    @commands.check_any(
+        commands.check(CHECKS.user_has_role_permission),
+        commands.check(CHECKS.user_can_manage_server),
+        commands.check(CHECKS.user_is_guild_owner)
+    )
+    async def block(self, ctx: discord.ApplicationContext, user: discord.Member):
+        self.log.info('Command "/admin block" was invoked')
+
+        # Defer response until processing is done.
+        await ctx.defer(ephemeral=True)
+
+        # You cannot block yourself.
+        if user.id == ctx.author.id:
+            await ctx.respond('You cannot block yourself.')
+            return
+
+        # You cannot block the guild owner or people with manage permissions.
+        if user.guild_permissions.manage_guild or ctx.guild.owner_id == ctx.author.id:
+            await ctx.respond('You do not have permissions to block this person.')
+            return
+
+        # Check if the user is already blocked.
+        blacklisted = check_blacklist(DATABASE, str(ctx.guild.id), str(user.id))
+        if blacklisted:
+            await ctx.respond(f"User {user.mention} is already blocked in this server.")
+            return
+
+        # Add user to blacklist.
+        add_user_to_blacklist(DATABASE, str(ctx.guild.id), str(user.id))
+        await ctx.respond(f"User {user.mention} added to server block list.")
+
+    @admin.command(
+        name='unblock',
+        description='Unblock user from clan-related interaction with Ecumene.',
+        options=[
+            discord.Option(discord.Member, name='user', description='User to unblock.')
+        ]
+    )
+    @commands.check_any(
+        commands.check(CHECKS.user_has_role_permission),
+        commands.check(CHECKS.user_can_manage_server),
+        commands.check(CHECKS.user_is_guild_owner)
+    )
+    async def unblock(self, ctx: discord.ApplicationContext, user: discord.Member): 
+        self.log.info('Command "/admin unblock" was invoked')
+
+        # Defer response until processing is done.
+        await ctx.defer(ephemeral=True)       
+
+        # Check if the user is already blocked.
+        blacklisted = check_blacklist(DATABASE, str(ctx.guild.id), str(user.id))
+        if not blacklisted:
+            await ctx.respond(f"User {user.mention} is not blocked in this server.")
+            return
+
+        # Add user to blacklist.
+        remove_user_from_blacklist(DATABASE, str(ctx.guild.id), str(user.id))
+        await ctx.respond(f"User {user.mention} removed from server block list.")
+
     @register.error
+    @block.error
+    @unblock.error
     async def admin_error(self, ctx: discord.ApplicationContext, error):
         self.log.info(error)
         if isinstance(error, CheckFailure):

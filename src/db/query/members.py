@@ -69,3 +69,30 @@ def get_members_matching(service: DatabaseService, member_ids):
     )
     result = service.select(qry)
     return result
+
+def check_blacklist(service: DatabaseService, guild_id, user_id):
+    table = service.retrieve_model('blacklist')
+    qry = (
+        select(table).
+            where(table.c.guild_id == guild_id).
+            where(table.c.discord_id == user_id)
+    )
+    result = service.select(qry)
+    return result
+
+def add_user_to_blacklist(service: DatabaseService, guild_id, user_id):
+    data = {
+        'guild_id': guild_id,
+        'discord_id': user_id
+    }
+    return service.insert('members', data)
+
+def remove_user_from_blacklist(service: DatabaseService, guild_id, user_id):
+    table = service.retrieve_model('blacklist')
+    qry = (
+        delete(table).
+            where(table.c.guild_id == guild_id).
+            where(table.c.discord_id == user_id)
+    )
+    result = service.execute(qry)
+    return result

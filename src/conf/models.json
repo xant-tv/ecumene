@@ -114,6 +114,31 @@
                 ]
             },
             {
+                "name": "blacklist",
+                "columns": [
+                    {
+                        "name": "guild_id",
+                        "type": "string",
+                        "size": 100
+                    },
+                    {
+                        "name": "discord_id",
+                        "type": "string",
+                        "size": 100
+                    }
+                ],
+                "constraints": [
+                    {
+                        "name": "is_blacklist_unique_in_guild",
+                        "type": "unique",
+                        "columns": [
+                            "guild_id",
+                            "discord_id"
+                        ]
+                    }
+                ]
+            },
+            {
                 "name": "admins",
                 "columns": [
                     {
@@ -193,6 +218,36 @@
                         "reftable": "admins",
                         "refcolumns": [
                             "admin_id"
+                        ]
+                    }
+                ]
+            },
+            {
+                "name": "permissions",
+                "columns": [
+                    {
+                        "name": "guild_id",
+                        "type": "string",
+                        "size": 100
+                    },
+                    {
+                        "name": "role_id",
+                        "type": "string",
+                        "size": 100
+                    },
+                    {
+                        "name": "permission_id",
+                        "type": "string",
+                        "size": 400
+                    }
+                ],
+                "constraints": [
+                    {
+                        "name": "is_role_permission_unique",
+                        "type": "unique",
+                        "columns": [
+                            "role_id",
+                            "permission_id"
                         ]
                     }
                 ]

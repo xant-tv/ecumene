@@ -2,6 +2,7 @@ import copy
 import logging
 import discord
 
+from db.query.members import check_blacklist
 from bot.core.shared import DATABASE, BNET, DICT_OF_ALL_COMMANDS
 from util.local import get_roles_permitted
 
@@ -13,14 +14,14 @@ def get_command_name(cmd, default=''):
         return cmd.name
     return default
 
-def get_lineage(cmd, lineage=list()):
+def get_lineage(cmd, lineage):
     """Recursively builds group -> command lineage."""
     lineage.append(get_command_name(cmd))
     if cmd.parent:
         get_lineage(cmd.parent, lineage)
     return lineage
 
-def get_lineage_paths(lineage, paths=list()):
+def get_lineage_paths(lineage, paths):
     """
     Recursively builds lineage paths for permission checks.
     Expects the lineage input to be reversed from get_lineage().
@@ -57,13 +58,22 @@ class EcumeneCheck():
     def user_has_role_permission(self, ctx):
         self.log.info(f'Check user_has_role_permission() invoked')
         # Get lineage and display path.
-        lineage = get_lineage(ctx.command)
+        lineage = list()
+        lineage = get_lineage(ctx.command, lineage)
         display_path = '/'.join(reversed(lineage))
         self.log.info(f'Checking permissions against "{display_path}"...')
         # Obtain role paths from lineage.
-        role_paths = get_lineage_paths(list(reversed(lineage)))
+        role_paths = list()
+        role_paths = get_lineage_paths(list(reversed(lineage)), role_paths)
         permitted = get_roles_permitted(role_paths)
         for role in ctx.author.roles:
             if role.id in permitted:
                 return True
         return False
+
+    def user_is_not_blacklisted(self, ctx):
+        self.log.info(f'Check user_is_not_blacklisted() invoked')
+        blacklisted = check_blacklist(DATABASE, ctx.guild.id, ctx.author.id)
+        if blacklisted:
+            return False
+        return True 

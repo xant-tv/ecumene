@@ -150,7 +150,7 @@ class BungieInterface():
         url = self._get_url_('GroupV2', group_id, 'Members', 'IndividualInvite', membership_type, membership_id)
         headers = self._get_headers_with_token_(token)
         # For some reason this expects a body, even if it's empty.
-        response = self._execute_(requests.post, url, headers=headers, json={})
+        response = self._execute_(requests.post, url, headers=headers, json=dict())
         content = self._strip_outer_(response)
         return content
 
