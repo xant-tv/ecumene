@@ -111,7 +111,9 @@ class Clan(commands.Cog):
                 )
 
             # Structure and append additional details.
-            clan_members = details.merge(struct, how='outer', on=['bnet_id'])
+            clan_members = details
+            if not struct.empty:
+                clan_members = clan_members.merge(struct, how='outer', on=['bnet_id'])
             clan_members['clan_id'] = clan_id
             clan_members['clan_name'] = clan_name
             members = append_frames(members, clan_members)
