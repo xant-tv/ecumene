@@ -91,7 +91,7 @@ class Clan(commands.Cog):
                 # Leave display names null if they're incomplete.
                 bungie_name = None
                 if display_name and display_code:
-                    bungie_name = f"{display_name}#{str(display_code).zfill(0)}"
+                    bungie_name = f"{display_name}#{str(display_code).zfill(4)}"
                 detail_map['bnet_id'].append(str(bnet_info.get('membershipId')))
                 detail_map['bungie_name'].append(bungie_name)
                 detail_map['join_date'].append(join_date)
