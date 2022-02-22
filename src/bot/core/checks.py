@@ -3,8 +3,8 @@ import logging
 import discord
 
 from db.query.members import check_blacklist
+from db.query.permissions import get_permitted_roles_bulk
 from bot.core.shared import DATABASE, BNET, DICT_OF_ALL_COMMANDS
-from util.local import get_roles_permitted
 
 def get_command_name(cmd, default=''):
     """Extracts command name."""
@@ -57,18 +57,37 @@ class EcumeneCheck():
 
     def user_has_role_permission(self, ctx):
         self.log.info(f'Check user_has_role_permission() invoked')
+
         # Get lineage and display path.
         lineage = list()
         lineage = get_lineage(ctx.command, lineage)
         display_path = '/'.join(reversed(lineage))
         self.log.info(f'Checking permissions against "{display_path}"...')
+
         # Obtain role paths from lineage.
-        role_paths = list()
-        role_paths = get_lineage_paths(list(reversed(lineage)), role_paths)
-        permitted = get_roles_permitted(role_paths)
+        permission_ids = list()
+        permission_ids = get_lineage_paths(list(reversed(lineage)), permission_ids)
+
+        # Get permitted roles in bulk from database.
+        results = get_permitted_roles_bulk(DATABASE, str(ctx.guild.id), permission_ids)
+        if not results:
+            return False
+        permitted = results.get('role_id')
+
+        # Loop author roles to compare with permitted.
         for role in ctx.author.roles:
-            if role.id in permitted:
+            if str(role.id) in permitted:
                 return True
+        return False
+
+    def user_has_privilege(self, ctx):
+        self.log.info(f'Check user_has_privilege() invoked')
+        if self.user_is_guild_owner(ctx):
+            return True
+        if self.user_can_manage_server(ctx):
+            return True
+        if self.user_has_role_permission(ctx):
+            return True
         return False
 
     def user_is_not_blacklisted(self, ctx):

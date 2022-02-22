@@ -51,10 +51,9 @@ class EcumeneDropdown(discord.ui.Select):
         # the user's favourite colour or choice. The self object refers to the
         # Select object, and the values attribute gets a list of the user's
         # selected options. We only want the first one.
-        #await interaction.response.send_message(
         await interaction.channel.send(
             #f"Hey {interaction.guild.default_role}, this idiot's favourite colour is {self.values[0]}. 🤣"
-            f"This idiot's favourite colour is {self.values[0]}. 🤣"
+            f"Hey, {interaction.user.mention}'s favourite colour is {self.values[0]}. 🤣"
         )
         if self.limit:
             # Delete attached parent if this is a one-time interaction.

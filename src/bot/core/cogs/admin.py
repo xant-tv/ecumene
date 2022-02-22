@@ -43,11 +43,7 @@ class Admin(commands.Cog):
             discord.Option(discord.Role, name='role', description='Role to attach to this clan.')
         ]
     )
-    @commands.check_any(
-        commands.check(CHECKS.user_has_role_permission),
-        commands.check(CHECKS.user_can_manage_server),
-        commands.check(CHECKS.user_is_guild_owner)
-    )
+    @commands.check(CHECKS.user_has_privilege)
     async def register(self, ctx: discord.ApplicationContext, clan: str, role: discord.Role):
         self.log.info('Command "/admin register" was invoked')
 

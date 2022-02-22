@@ -23,7 +23,7 @@ class Clan(commands.Cog):
     Cog holding all clan-related functions.
     Basically allows management of the:
       - /clan list <filter: {all|inactive}> (list users in clans and information about them)
-      - /clan kick <user> <force_flag> (kick a user from the clan, has interactive prompt but can be forced)
+      - /clan kick <user> (kick a user from the clan, has interactive prompt but can be forced)
       - /clan join <role> (doesn't actually join the clan, but prompts admin account to send a clan invite)
       - /clan promote <user> (this should be self-evident)
       - /clan demote <user> (also this)
@@ -45,11 +45,7 @@ class Clan(commands.Cog):
             discord.Option(str, name='filter', description='Filter members based on criteria.', choices=['All', FILTER_INACTIVE])
         ]
     )
-    @commands.check_any(
-        commands.check(CHECKS.user_has_role_permission),
-        commands.check(CHECKS.user_can_manage_server),
-        commands.check(CHECKS.user_is_guild_owner)
-    )
+    @commands.check(CHECKS.user_has_privilege)
     async def list(self, ctx: discord.ApplicationContext, filter: str):
         self.log.info('Command "/clan list" was invoked')
         
@@ -166,11 +162,7 @@ class Clan(commands.Cog):
             discord.Option(discord.Member, name='user', description='User to kick from clan.')
         ]
     )
-    @commands.check_any(
-        commands.check(CHECKS.user_has_role_permission),
-        commands.check(CHECKS.user_can_manage_server),
-        commands.check(CHECKS.user_is_guild_owner)
-    )
+    @commands.check(CHECKS.user_has_privilege)
     async def kick(self, ctx: discord.ApplicationContext, user: discord.Member):
         self.log.info('Command "/clan kick" was invoked')
         
@@ -283,11 +275,7 @@ class Clan(commands.Cog):
             discord.Option(discord.Member, name='user', description='User to promote.')
         ]
     )
-    @commands.check_any(
-        commands.check(CHECKS.user_has_role_permission),
-        commands.check(CHECKS.user_can_manage_server),
-        commands.check(CHECKS.user_is_guild_owner)
-    )
+    @commands.check(CHECKS.user_has_privilege)
     async def promote(self, ctx: discord.ApplicationContext, user: discord.Member):
         self.log.info('Command "/clan promote" was invoked')
         await ctx.respond(f"You have discovered a secret. This channel is not yet open to you.", ephemeral=True)
@@ -299,11 +287,7 @@ class Clan(commands.Cog):
             discord.Option(discord.Member, name='user', description='User to demote.')
         ]
     )
-    @commands.check_any(
-        commands.check(CHECKS.user_has_role_permission),
-        commands.check(CHECKS.user_can_manage_server),
-        commands.check(CHECKS.user_is_guild_owner)
-    )
+    @commands.check(CHECKS.user_has_privilege)
     async def demote(self, ctx: discord.ApplicationContext, user: discord.Member):
         self.log.info('Command "/clan demote" was invoked')
         await ctx.respond(f"You have discovered a secret. This channel is not yet open to you.", ephemeral=True)
@@ -317,11 +301,7 @@ class Clan(commands.Cog):
         ]
     )
     @commands.check(CHECKS.user_is_not_blacklisted)
-    @commands.check_any(
-        commands.check(CHECKS.user_has_role_permission),
-        commands.check(CHECKS.user_can_manage_server),
-        commands.check(CHECKS.user_is_guild_owner)
-    )
+    @commands.check(CHECKS.user_has_privilege)
     async def join(self, ctx: discord.ApplicationContext, clan: discord.Role):
         self.log.info('Command "/clan join" was invoked')
         
