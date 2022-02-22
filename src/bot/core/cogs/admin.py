@@ -7,6 +7,7 @@ from discord.ext import commands
 from bot.core.checks import EcumeneCheck
 from bot.core.shared import DATABASE, BNET, DICT_OF_ALL_COMMANDS
 from db.query.transactions import update_transaction
+from db.query.clans import get_all_clans_in_guild
 from util.encrypt import generate_state
 from util.time import get_current_time
 from util.enum import ENUM_ADMIN_REGISTRATION
@@ -94,7 +95,42 @@ class Admin(commands.Cog):
         # Close out context.
         await ctx.respond("Privilege escalation has begun. Enact impulse.")
 
+    @admin.command(
+        name='list',
+        description='List all clans registered with Ecumene in this server.',
+    )
+    @commands.check(CHECKS.user_has_privilege)
+    async def clans(self, ctx: discord.ApplicationContext):
+        self.log.info('Command "/admin list" was invoked')
+
+        # Defer response until processing is done.
+        await ctx.defer(ephemeral=True)
+
+        # Get clans for this server.
+        clans = get_all_clans_in_guild(DATABASE, str(ctx.guild.id))
+        if not clans:
+            await ctx.respond('Ecumene does not manage any clans on this server.')
+            return
+
+        # Structure details so we can loop numerically by identifier.
+        clan_details = dict(
+            zip(
+                list(map(int, clans.get('clan_id'))),
+                clans.get('clan_name')
+            )
+        )
+
+        # Nicely format the clan names.
+        clan_display = list()
+        for clan_id in sorted(clan_details.keys()):
+            clan_display.append(f"**{clan_details.get(clan_id)}#{clan_id}**")
+
+        # Respond to request.
+        list_separator = "\n • "
+        await ctx.respond(f"Clans managed by Ecumene: {list_separator}{list_separator.join(clan_display)}")
+
     @register.error
+    @clans.error
     async def admin_error(self, ctx: discord.ApplicationContext, error):
         self.log.info(error)
         if isinstance(error, CheckFailure):
