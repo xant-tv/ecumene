@@ -5,9 +5,10 @@ from discord.commands.errors import CheckFailure
 from discord.ext import commands
 
 from bot.core.checks import EcumeneCheck
+from bot.core.interactions import EcumeneConfirmRemoveClan
 from bot.core.shared import DATABASE, BNET, DICT_OF_ALL_COMMANDS
 from db.query.transactions import update_transaction
-from db.query.clans import get_all_clans_in_guild
+from db.query.clans import get_all_clans_in_guild, get_clan_in_guild, delete_clan_in_guild
 from util.encrypt import generate_state
 from util.time import get_current_time
 from util.enum import ENUM_ADMIN_REGISTRATION
@@ -22,6 +23,7 @@ class Admin(commands.Cog):
     Cog holding all admin-related functions.
     These commands are used for registering clan administration:
       - /admin register <id> <role> (basically /register but for a destiny clan)
+      - /admin deregister <id> (remove a clan from bot administration)
       - /admin list (list clans and the roles that administrate them)
       - /admin grant <clan> <role> (allows the selected role to run /clan commands for that clan)
       - /admin revoke <clan> <role> (disallows the selected role from running /clan commands for that clan)
@@ -96,6 +98,52 @@ class Admin(commands.Cog):
         await ctx.respond("Privilege escalation has begun. Enact impulse.")
 
     @admin.command(
+        name='deregister',
+        description='Stop administering a clan with Ecumene.',
+        options=[
+            discord.Option(str, name='clan', description='Group identifier for the clan you wish to deregister.')
+        ]
+    )
+    @commands.check(CHECKS.user_has_privilege)
+    async def deregister(self, ctx: discord.ApplicationContext, clan: str):
+        self.log.info('Command "/admin deregister" was invoked')
+
+        # Defer response until processing is done.
+        await ctx.defer(ephemeral=True)
+
+        # Check if we have this clan in this guild.
+        results = get_clan_in_guild(DATABASE, str(ctx.guild.id), 'clan_id', clan)
+        if not results:
+            await ctx.respond("This clan is not managed by Ecumene for this server.")
+            return
+
+        # Get some clan details.
+        clan_name = f"{results.get('clan_name')[0]}#{results.get('clan_id')[0]}"
+
+        # Create confirmation menu.
+        view = EcumeneConfirmRemoveClan()
+        message = await ctx.respond(f"This will remove **{clan_name}** from my network. Are you sure?", view=view)
+    
+        # Wait for the view to stop listening for input.
+        await view.wait()
+        if view.value is None:
+            # The view timed out - not sure how long the interaction lives for.
+            # await message.delete()
+            await message.edit('Your request has timed out.', view=None)
+        elif view.value:
+            # Confirmed - continue function execution.
+            pass
+        else:
+            # Cancelled - remove view and respond to user. Exit command.
+            # await message.delete()
+            await message.edit('Your request has been cancelled.', view=None)
+            return
+
+        # Remove the clan entry.
+        delete_clan_in_guild(DATABASE, str(ctx.guild.id), clan)
+        await message.edit(f'Designated clan **{clan_name}** has been removed.', view=None)
+
+    @admin.command(
         name='list',
         description='List all clans registered with Ecumene in this server.',
     )
@@ -113,17 +161,20 @@ class Admin(commands.Cog):
             return
 
         # Structure details so we can loop numerically by identifier.
-        clan_details = dict(
-            zip(
-                list(map(int, clans.get('clan_id'))),
-                clans.get('clan_name')
-            )
-        )
-
+        clan_details = dict()
+        for clan_id, clan_name, role_id in zip(clans.get('clan_id'), clans.get('clan_name'), clans.get('role_id')):
+            data = {
+                'clan_name': clan_name,
+                'role_id': int(role_id)
+            }
+            clan_details[int(clan_id)] = data
+        
         # Nicely format the clan names.
         clan_display = list()
         for clan_id in sorted(clan_details.keys()):
-            clan_display.append(f"**{clan_details.get(clan_id)}#{clan_id}**")
+            clan_data = clan_details.get(clan_id) # Already an integer from prior handling.
+            role = ctx.guild.get_role(clan_data.get('role_id'))
+            clan_display.append(f"**{clan_data.get('clan_name')}#{clan_id}** → {role.mention}")
 
         # Respond to request.
         list_separator = "\n • "

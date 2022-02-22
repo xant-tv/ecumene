@@ -2,7 +2,7 @@ import logging
 import discord
 
 # Defines a confirmation dialog.
-class EcumeneConfirm(discord.ui.View):
+class EcumeneConfirmKick(discord.ui.View):
 
     def __init__(self):
         super().__init__()
@@ -20,15 +20,32 @@ class EcumeneConfirm(discord.ui.View):
         self.value = False
         self.stop()
 
-# Defines a custom Select containing colour options
-# that the user can choose. The callback function
-# of this class is called when the user changes their choice
+class EcumeneConfirmRemoveClan(discord.ui.View):
+
+    def __init__(self):
+        super().__init__()
+        self.value = None
+
+    # On press set inner value and stop the view from listening to more input.
+    @discord.ui.button(label="Remove", style=discord.ButtonStyle.red)
+    async def confirm(self, button: discord.ui.Button, interaction: discord.Interaction):
+        self.value = True
+        self.stop()
+
+    # Similar except record cancel.
+    @discord.ui.button(label="Cancel", style=discord.ButtonStyle.grey)
+    async def cancel(self, button: discord.ui.Button, interaction: discord.Interaction):
+        self.value = False
+        self.stop()
+
+# Defines a custom Select containing colour options that the user can choose. 
+# The callback function of this class is called when the user changes their choice
 class EcumeneDropdown(discord.ui.Select):
 
     def __init__(self, options, limit=False):
         self.log = logging.getLogger(f'{self.__module__}.{self.__class__.__name__}')
 
-        # The placeholder is what will be shown when no option is chosen
+        # The placeholder is what will be shown when no option is chosen.
         # The min and max values indicate we can only pick one of the three options
         # The options parameter defines the dropdown options. We defined this above
         super().__init__(
@@ -52,7 +69,6 @@ class EcumeneDropdown(discord.ui.Select):
         # Select object, and the values attribute gets a list of the user's
         # selected options. We only want the first one.
         await interaction.channel.send(
-            #f"Hey {interaction.guild.default_role}, this idiot's favourite colour is {self.values[0]}. 🤣"
             f"Hey, {interaction.user.mention}'s favourite colour is {self.values[0]}. 🤣"
         )
         if self.limit:

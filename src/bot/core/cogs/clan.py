@@ -7,7 +7,7 @@ from bnet.client import BungieInterfaceError
 
 from bot.core.checks import EcumeneCheck
 from bot.core.shared import DATABASE, BNET, DICT_OF_ALL_COMMANDS
-from bot.core.interactions import EcumeneConfirm
+from bot.core.interactions import EcumeneConfirmKick
 from db.query.clans import get_all_clans_in_guild, get_clan_in_guild
 from db.query.members import get_members_matching, get_member_by_id
 from db.query.admins import get_admin_by_id
@@ -220,7 +220,7 @@ class Clan(commands.Cog):
             return
 
         # Create confirmation menu.
-        view = EcumeneConfirm()
+        view = EcumeneConfirmKick()
         message = await ctx.respond(f"This will kick {user.mention} from {', '.join(to_kick_name)}. Are you sure?", view=view)
     
         # Wait for the view to stop listening for input.

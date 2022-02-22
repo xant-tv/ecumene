@@ -24,6 +24,16 @@ def get_clan_in_guild(service: DatabaseService, guild_id, target_column, clan_id
 def insert_clan_details(service: DatabaseService, data):
     return service.insert('clans', data)
 
+def delete_clan_in_guild(service: DatabaseService, guild_id, clan_id):
+    table = service.retrieve_model('clans')
+    qry = (
+        delete(table).
+            where(table.c.guild_id == guild_id).
+            where(table.c.clan_id == clan_id)
+    )
+    result = service.execute(qry)
+    return result
+
 def update_clan_details(service: DatabaseService, data):
     # Retain match identifier separately.
     # Pop this out of the dictionary because it shouldn't be part of the values payload.
