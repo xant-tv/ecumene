@@ -21,6 +21,11 @@ class EcumeneRouteHandler():
 
     def capture_login(self, request):
         """Complete account linkage between Destiny 2 and Discord."""
+
+        # If the request has no arguments, then just exit.
+        if not (request.args.get('code') or request.args.get('state')):
+            return None, None
+
         # Capture code and state from login endpoint.
         capture = {
             'code': request.args.get('code')
@@ -29,6 +34,8 @@ class EcumeneRouteHandler():
         # Update transaction to complete database record.
         update_transaction(self.db, capture, request.args.get('state'))
         result = get_transaction(self.db, request.args.get('state'))
+        if not result:
+            raise ValueError('Failed to find specified state.')
 
         # Split functionality depending on purpose enumeration.
         purpose = result.get('purpose')[0]

@@ -58,7 +58,9 @@ def failure():
 def login():
     try:
         purpose, display = ecumene.routes.capture_login(request)
-        if purpose not in ENUM_REGISTRATION:
+        if not purpose:
+            return redirect(url_for('index'))
+        elif purpose not in ENUM_REGISTRATION:
             raise NotImplementedError(f'Transaction purpose "{purpose}" not implemented.')
         elif purpose == ENUM_USER_REGISTRATION:
             return redirect(url_for('success', displayName=display))
