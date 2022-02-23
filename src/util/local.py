@@ -29,3 +29,9 @@ def get_guild_ids():
     if guild:
         return [int(guild)]
     return None
+
+def get_system_role():
+    role_name = os.getenv('DISCORD_SYSTEM_ROLE')
+    if not role_name:
+        role_name = 'Amiable' # Hardcode this for now.
+    return role_name

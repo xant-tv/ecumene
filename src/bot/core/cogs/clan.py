@@ -95,7 +95,7 @@ class Clan(commands.Cog):
             details = make_structure(detail_map)
 
             # Extract database member information.
-            records = get_members_matching(DATABASE, details['bnet_id'].to_list())
+            records = get_members_matching(DATABASE, 'bnet_id', details['bnet_id'].to_list())
             struct = make_empty_structure()
             if records:            
                 for user_id in records.get('discord_id'):

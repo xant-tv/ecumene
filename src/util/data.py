@@ -3,6 +3,12 @@ import pandas as pd
 
 from util.time import get_current_time, humanize_timedelta
 
+# Primitive helpers.
+def chunks(lst, n):
+    """Yield successive n-sized chunks from list."""
+    for i in range(0, len(lst), n):
+        yield lst[i:i + n]
+
 # Basic constructors and wrappers.
 def make_empty_structure() -> pd.DataFrame:
     return pd.DataFrame()

@@ -251,6 +251,30 @@
                         ]
                     }
                 ]
+            },
+            {
+                "name": "headers",
+                "columns": [
+                    {
+                        "name": "guild_id",
+                        "type": "string",
+                        "size": 100
+                    },
+                    {
+                        "name": "role_id",
+                        "type": "string",
+                        "size": 100
+                    }
+                ],
+                "constraints": [
+                    {
+                        "name": "is_guild_unique",
+                        "type": "unique",
+                        "columns": [
+                            "guild_id"
+                        ]
+                    }
+                ]
             }
         ] 
     }

@@ -48,24 +48,27 @@ def insert_or_update_member(service: DatabaseService, data):
     # Delete is necessary because the individual matches might actually be for separate records.
     #   i.e. Discord user registers an account which a different discord user had already registered.
     if match_discord and match_destiny:
+        discord_id_potentially_removed = set(match_discord.get('discord_id') + match_destiny.get('discord_id'))
         delete_member_by_id(service, 'discord_id', data.get('discord_id'))
         delete_member_by_id(service, 'destiny_id', data.get('destiny_id'))
-        return insert_member_details(service, data)
+        return insert_member_details(service, data), discord_id_potentially_removed
     
     # If either _but not both_ then we need to update members data.
     if match_discord:
-        return update_member_details(service, 'discord_id', data)
+        discord_id_potentially_removed = set(match_discord.get('discord_id'))
+        return update_member_details(service, 'discord_id', data), discord_id_potentially_removed
     if match_destiny:
-        return update_member_details(service, 'destiny_id', data)
+        discord_id_potentially_removed = set(match_destiny.get('discord_id'))
+        return update_member_details(service, 'destiny_id', data), discord_id_potentially_removed
 
     # New member details.
-    return insert_member_details(service, data)
+    return insert_member_details(service, data), None
 
-def get_members_matching(service: DatabaseService, member_ids):
+def get_members_matching(service: DatabaseService, target_column, member_ids):
     table = service.retrieve_model('members')
     qry = (
         select(table).
-            where(table.c.bnet_id.in_(member_ids))
+            where(getattr(table.c, target_column).in_(member_ids))
     )
     result = service.select(qry)
     return result

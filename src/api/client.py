@@ -60,3 +60,21 @@ class DiscordInterface():
         headers = self._get_headers_()
         response = self._execute_(requests.post, url, headers=headers, json=data)
         return response
+
+    def get_member(self, guild_id, user_id):
+        url = self._get_url_('guilds', guild_id, 'members', user_id)
+        headers = self._get_headers_()
+        response = self._execute_(requests.get, url, headers=headers)
+        return response
+
+    def add_role_to_member(self, guild_id, user_id, role_id):
+        url = self._get_url_('guilds', guild_id, 'members', user_id, 'roles', role_id)
+        headers = self._get_headers_()
+        response = self._execute_(requests.put, url, headers=headers)
+        return response
+
+    def delete_role_from_member(self, guild_id, user_id, role_id):
+        url = self._get_url_('guilds', guild_id, 'members', user_id, 'roles', role_id)
+        headers = self._get_headers_()
+        response = self._execute_(requests.delete, url, headers=headers)
+        return response

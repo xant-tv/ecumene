@@ -3,6 +3,7 @@ import logging
 from bnet.client import BungieInterface
 from api.client import DiscordInterface, DiscordInterfaceError
 from db.client import DatabaseService
+from db.query.headers import get_guilds
 from db.query.transactions import get_transaction, update_transaction
 from db.query.members import insert_or_update_member
 from db.query.admins import insert_or_update_admin
@@ -53,16 +54,47 @@ class EcumeneRouteHandler():
             # Handles the case where the user is re-registering with either:
             #         - A new Discord ID
             #         - A new Destiny ID
+            user_id = result.get('request_id')[0]
             data = {
-                'discord_id': result.get('request_id')[0],
+                'discord_id': user_id,
                 'destiny_id': str(profile_data.get('membershipId')),
                 'destiny_mtype': profile_data.get('membershipType'),
                 'bnet_id': str(token_data.get('membership_id')),
                 'bnet_mtype': self.bnet.enum.mtype.bungie,
                 'registered_on': get_current_time()
             }
-            insert_or_update_member(self.db, data)
+            _, delete_list = insert_or_update_member(self.db, data)
             self.log.info('Captured registration request!')
+
+            # Update user roles in all guilds for this new member.
+            headers = get_guilds(self.db)
+            if headers:
+
+                # Unfortunately, we have to do this guild-by-guild.
+                # Could take a while at scale, thankfully there are multiple workers!
+                for guild_id, role_id in zip(headers.get('guild_id'), headers.get('role_id')):
+
+                    # Remove role for any members that we deleted.       
+                    if delete_list:
+                        for delete_id in delete_list:
+                            if delete_id == user_id: 
+                                continue
+                            try:
+                                self.api.get_member(guild_id, user_id)
+                                self.api.delete_role_from_member(guild_id, delete_id, role_id)
+                            except DiscordInterfaceError as e:
+                                # Either member didn't exist in guild or unable to set roles.
+                                pass
+
+                    # Now try to grant the role for new registration.
+                    try:
+                        self.api.get_member(guild_id, user_id)
+                        self.api.add_role_to_member(guild_id, user_id, role_id)
+                    except DiscordInterfaceError as e:
+                        # Either member didn't exist in guild or unable to set roles.
+                        pass
+                
+                self.log.info('Proliferated user roles!')
 
             # Delete the initial registration message via the API.
             self.api.delete_message(result.get('channel_id')[0], result.get('message_id')[0])
