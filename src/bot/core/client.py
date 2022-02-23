@@ -88,6 +88,7 @@ class EcumeneBot():
         member_ids = list()
         for guild_member in guild.members:
             member_ids.append(str(guild_member.id))
+        self.log.info(f"Found {len(member_ids)} members in guild")
 
         # Chunk members and process, adding role to each of them.
         member_chunks = list(chunks(member_ids, 1000))
