@@ -69,7 +69,7 @@ def login():
         else:
             raise ValueError('Transaction did not specify purpose.')
     except Exception as exc:
-        logging.exception(exc)
+        ecumene.log.error(exc)
         return redirect(url_for('failure'))
 
 @client.route("/", methods=['GET'])

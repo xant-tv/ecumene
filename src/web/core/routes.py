@@ -24,18 +24,23 @@ class EcumeneRouteHandler():
 
         # If the request has no arguments, then just exit.
         if not (request.args.get('code') or request.args.get('state')):
-            return None, None
+            return None, None # Will result in a redirect to the index page.
 
         # Capture code and state from login endpoint.
         capture = {
             'code': request.args.get('code')
         }
 
-        # Update transaction to complete database record.
-        update_transaction(self.db, capture, request.args.get('state'))
+        # Check if state has been processed before.
         result = get_transaction(self.db, request.args.get('state'))
         if not result:
             raise ValueError('Failed to find specified state.')
+        if result.get('code')[0]:
+            # Handle cases where state has been processed before.
+            raise ValueError('Specified state has already been processed.')
+
+        # Update transaction to complete database record.
+        update_transaction(self.db, capture, request.args.get('state'))
 
         # Split functionality depending on purpose enumeration.
         purpose = result.get('purpose')[0]
@@ -55,7 +60,7 @@ class EcumeneRouteHandler():
             # Obtain both the Discord and Destiny 2 identifiers.
             token_data = self.bnet.get_token(request.args.get('code'))
             profile_data = self.bnet.get_linked_profiles(self.bnet.enum.mtype.bungie, token_data.get('membership_id'))
-            bungie_name = f"{profile_data.get('bungieGlobalDisplayName')}#{profile_data.get('bungieGlobalDisplayNameCode')}"
+            bungie_name = f"{profile_data.get('bungieGlobalDisplayName')}#{str(profile_data.get('bungieGlobalDisplayNameCode')).zfill(4)}"
             
             # Package all this information and capture in database.
             # Handles the case where the user is re-registering with either:
@@ -104,7 +109,11 @@ class EcumeneRouteHandler():
                 self.log.info('Proliferated user roles!')
 
             # Delete the initial registration message via the API.
-            self.api.delete_message(result.get('channel_id')[0], result.get('message_id')[0])
+            try:
+                self.api.delete_message(result.get('channel_id')[0], result.get('message_id')[0])
+            except DiscordInterfaceError as e:
+                # Message was already deleted.
+                pass
 
             # Create an entirely new message to indicate the user is registered.
             content = {

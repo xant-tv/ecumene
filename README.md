@@ -21,6 +21,8 @@ Run some basic firewalld commands
  `sudo firewall-cmd --zone=public --permanent --add-port=<your_port>/<protocol>`
  `sudo firewall-cmd --reload`
 
+Information [here](https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/7/html/security_guide/sec-setting_and_controlling_ip_sets_using_firewalld) around how to blacklist IPs:
+
 Install the following:
  - [docker](https://docs.docker.com/engine/install/rhel/)
  - [Configure docker to start on boot](https://docs.docker.com/engine/install/linux-postinstall/#configure-docker-to-start-on-boot)
