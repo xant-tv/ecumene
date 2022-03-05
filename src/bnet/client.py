@@ -73,8 +73,11 @@ class BungieInterface():
         """Provide a `requests` method to execute."""
         self.log.info(f'{method.__name__.upper()} -> {url}')
         response = method(url, headers=headers, params=params, json=json, data=data)
-        body = response.json()
         if not response.ok:
+            try:
+                body = response.json()
+            except requests.exceptions.RequestException as e:
+                raise BungieInterfaceError('RequestException', str(e)) from e
             raise BungieInterfaceError(body.get('ErrorStatus', body.get('error_description')))
         return response.json()
 
