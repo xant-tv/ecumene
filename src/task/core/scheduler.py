@@ -97,20 +97,27 @@ class EcumeneScheduler():
         """Remove cached administrator tokens that are no longer referenced."""
         self.log.info('Running "clean_admin_cache" scheduled task...')
 
-        # Get orphans first just to log if any are present.
-        orphans = get_orphans(self.db)
-        if orphans:
-            self.log.info(f"Found {len(orphans.get('admin_id'))} orphaned credential(s)")
-            delete_orphans(self.db)
+        # Put this whole thing into a try-except block to avoid scheduler death.
+        try:
 
-        # Dead credentials are still referenced so we only check those.
-        dead = get_dead(self.db, TOKEN_PROCESSING_BUFFER)
-        if dead:
-            self.log.info(f"Found {len(dead.get('admin_id'))} dead credential(s)")
-            
-            # TODO: There will need to be a message to Discord to notify of expiry.
-            # This will have to wait until we have notification functions in place.
-            # The idea is it would look up the clan this user administrates and then notify the guild(s).
+            # Get orphans first just to log if any are present.
+            orphans = get_orphans(self.db)
+            if orphans:
+                self.log.info(f"Found {len(orphans.get('admin_id'))} orphaned credential(s)")
+                delete_orphans(self.db)
+
+            # Dead credentials are still referenced so we only check those.
+            dead = get_dead(self.db, TOKEN_PROCESSING_BUFFER)
+            if dead:
+                self.log.info(f"Found {len(dead.get('admin_id'))} dead credential(s)")
+                
+                # TODO: There will need to be a message to Discord to notify of expiry.
+                # This will have to wait until we have notification functions in place.
+                # The idea is it would look up the clan this user administrates and then notify the guild(s).
+
+        # If something goes wrong, log and reschedule again.
+        except Exception as e:
+            self.log.error(e)
         
         # Ensure this task is rescheduled to run in a day.
         # Set this as low in priority to avoid getting in the way of keep-alive tasking.
