@@ -17,6 +17,7 @@ from util.data import make_empty_structure, make_structure, append_frames, forma
 
 CHECKS = EcumeneCheck()
 FILTER_INACTIVE = 'Inactive'
+EMPTY = ""
 
 class Clan(commands.Cog):
     """
@@ -79,7 +80,8 @@ class Clan(commands.Cog):
             for member in results:
                 # Capture identifier and last online activity.
                 # The user's global display information may only be contained in one key! (Why Bungie?!)
-                bnet_info = member.get('bungieNetUserInfo')
+                # It's also possible for the user to not have a Bungie.net login!
+                bnet_info = member.get('bungieNetUserInfo') or dict()
                 destiny_info = member.get('destinyUserInfo')
                 display_name = bnet_info.get('bungieGlobalDisplayName') or destiny_info.get('bungieGlobalDisplayName')
                 display_code = bnet_info.get('bungieGlobalDisplayNameCode') or destiny_info.get('bungieGlobalDisplayNameCode')
@@ -88,14 +90,14 @@ class Clan(commands.Cog):
                 bungie_name = None
                 if display_name and display_code:
                     bungie_name = f"{display_name}#{str(display_code).zfill(4)}"
-                detail_map['bnet_id'].append(str(bnet_info.get('membershipId')))
+                detail_map['bnet_id'].append(str(bnet_info.get('membershipId', EMPTY)))
                 detail_map['bungie_name'].append(bungie_name)
                 detail_map['join_date'].append(join_date)
                 detail_map['last_online'].append(member.get('lastOnlineStatusChange'))
             details = make_structure(detail_map)
 
             # Extract database member information.
-            records = get_members_matching(DATABASE, 'bnet_id', details['bnet_id'].to_list())
+            records = get_members_matching(DATABASE, 'bnet_id', details['bnet_id'].dropna().to_list())
             struct = make_empty_structure()
             if records:            
                 for user_id in records.get('discord_id'):
