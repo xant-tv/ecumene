@@ -34,7 +34,7 @@ class DatabaseService():
         self.metadata = MetaData()
         self.models = self._build_models_from_json_(self._models)
 
-        # Store engine. Use pessimistic pool pre-ping to handle disconnects.
+        # Store engine. Use optimisting recycle to handle disconnects.
         self.engine = create_engine(f"oracle+cx_oracle://{self.user}:{self.password}@{self.sid}", pool_recycle=3600)
         self._test_connect_()
         self.log.info(f'Connected as {self.user}@{self.sid}')
