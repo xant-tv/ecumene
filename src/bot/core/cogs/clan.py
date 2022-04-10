@@ -1,7 +1,7 @@
 import discord
 
+from discord import CheckFailure
 from discord.commands import slash_command, SlashCommandGroup
-from discord.commands.errors import CheckFailure
 from discord.ext import commands
 from bnet.client import BungieInterfaceError
 
