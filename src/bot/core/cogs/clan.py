@@ -102,9 +102,15 @@ class Clan(commands.Cog):
             if records:            
                 for user_id in records.get('discord_id'):
                     # Capture user name from server.
-                    user = await ctx.guild.fetch_member(user_id)
+                    try:
+                        # This invokes a call to the Discord API so it can error.
+                        user = await ctx.guild.fetch_member(user_id)
+                        user_discord_name = f"{user.name}#{user.discriminator}"
+                    except Exception:
+                        # User is not in guild.
+                        user_discord_name = EMPTY
                     records_map['discord_id'].append(user_id)
-                    records_map['discord_name'].append(f"{user.name}#{user.discriminator}")
+                    records_map['discord_name'].append(user_discord_name)
                 struct = make_structure(records)
                 struct['discord_name'] = struct['discord_id'].map(
                     dict(
