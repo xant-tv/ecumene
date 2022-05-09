@@ -137,3 +137,6 @@ dmypy.json
 # Ignore some temporary local files.
 certs/
 *.pem
+
+# Data files
+*.csv
