@@ -119,6 +119,47 @@ class BungieInterface():
         response = self._execute_(requests.post, url, headers=headers, data=data)
         return response
 
+    def get_destiny_player(self, display_name, display_code, membership_type):
+        url = self._get_url_('Destiny2', 'SearchDestinyPlayerByBungieName', membership_type)
+        headers = self._get_headers_()
+        data = {
+            'displayName': display_name, 
+            'displayNameCode': int(display_code)
+        }
+        response = self._execute_(requests.post, url, headers=headers, json=data)
+        content = next(iter(self._strip_outer_(response)), dict()) # Return first element of list or an empty structure.
+        return content
+
+    def find_destiny_player(self, display_name, display_code):
+        # Use to attempt to find a player based on their display name and code.
+        # There is no guarantee this player will be unique.
+        # We have to search all membership types.
+        membership_types = [
+            self.enum.mtype.steam, 
+            self.enum.mtype.playstation, 
+            self.enum.mtype.xbox, 
+            self.enum.mtype.stadia
+        ]
+        all_results = list()
+        final_results = list()
+        for membership_type in membership_types:
+            results = self.get_destiny_player(display_name, display_code, membership_type)
+            if results:
+                all_results.append(results)
+                # Check for cross-save membership type override.
+                cross_save = results.get('crossSaveOverride')
+                if not cross_save:
+                    # Keep trying to find the player's information.
+                    continue
+                elif cross_save == membership_type:
+                    final_results.append(results)
+                    return final_results
+                else:
+                    results = self.get_destiny_player(display_name, display_code, cross_save)
+                    final_results.append(results)
+                    return final_results
+        return all_results
+
     def get_linked_profiles(self, membership_type, membership_id):
         url = self._get_url_('Destiny2', membership_type, 'Profile', membership_id, 'LinkedProfiles')
         headers = self._get_headers_()

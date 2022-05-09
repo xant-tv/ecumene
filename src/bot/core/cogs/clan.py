@@ -27,6 +27,7 @@ class Clan(commands.Cog):
       - /clan kick <user> (kick a user from the clan, has interactive prompt but can be forced)
       - /clan join <role> (doesn't actually join the clan, but prompts admin account to send a clan invite)
       - /clan rank <user> (this is used to promote and demote users)
+      - /clan action <method> <user> (used for direct interaction methods without discord link)
     """
     def __init__(self, log):
         self.log = log
@@ -402,7 +403,143 @@ class Clan(commands.Cog):
         # Format success message and send.
         await message.edit(f"Set {user.mention} to **{rank}** in {', '.join(was_set)}.", view=None)
 
-    # Note less checks for this command.
+    @clan.command(
+        name='action',
+        description='Interact with the Bungie clan directly.',
+        options=[
+            discord.Option(str, name='method', description='Method of interaction.', choices=['Kick']),
+            discord.Option(str, name='user', description='Bungie name of player.')
+        ]
+    )
+    @commands.check(CHECKS.user_has_privilege)
+    async def action(self, ctx: discord.ApplicationContext, method: str, user: str):
+        self.log.info('Command "/clan action" was invoked')
+
+        # Defer response until processing is done.
+        # Note the ephemeral deferral is required to hide the message.
+        await ctx.defer(ephemeral=True)
+
+        # Split name entry by the code.
+        try:
+            user_name, user_code = user.split('#')
+        except Exception:
+            await ctx.respond("Please provide full Bungie display name of the user.")
+            return
+        
+        # Now we need to find all users potentially matching this combination.
+        players = BNET.find_destiny_player(user_name, user_code)
+        if not players:
+            await ctx.respond(f"No player matching the name **{user}** was found.")
+            return
+
+        # For each user we need to:
+        # - Identify any groups they are registered with.
+        # - Map the user information to that group.
+        all_results = list()
+        for player in players:
+            
+            membership_id = player.get('membershipId')
+            membership_type = player.get('membershipType')
+            results = BNET.get_groups_for_user(membership_type, membership_id)
+            if results:
+                all_results += results
+        
+        # If no results have been returned then, obviously, they're not in the clan.
+        if not all_results:
+            await ctx.respond(f"User **{user}** is not in any clans.")
+            return
+
+        # Perform the appropriate action.
+        if method == 'Kick':
+
+            # Extract group information.
+            to_kick = list()
+            to_kick_name = list()
+            for results in all_results:
+                group_info = results.get('group')
+                member_info = results.get('member')
+                group_id = group_info.get('groupId')
+                group_name = group_info.get('name')
+                destiny_info = member_info.get('destinyUserInfo')
+                user_membership_id = destiny_info.get('membershipId')
+                user_membership_type = destiny_info.get('membershipType')
+
+                # Pull the group administrator and credentials.
+                clan = get_clan_in_guild(DATABASE, str(ctx.guild.id), 'clan_id', group_id)
+                if not clan:
+                    continue
+
+                # Each clan to kick needs to record information for execution.
+                info = {
+                    'admin_id': clan.get('admin_id')[0],
+                    'group_name': group_name,
+                    'group_id': group_id,
+                    'membership_id': user_membership_id,
+                    'membership_type': user_membership_type
+                }
+                to_kick.append(info)
+                to_kick_name.append(f"**{group_name}#{group_id}**")
+
+            # This clan isn't managed by the bot in this guild.
+            if not to_kick:
+                await ctx.respond(f"Clans for user **{user}** are not managed by Ecumene.")
+                return
+
+            # Create confirmation menu.
+            view = EcumeneConfirmKick()
+            message = await ctx.respond(f"This will kick **{user}** from {', '.join(to_kick_name)}. Are you sure?", view=view)
+        
+            # Wait for the view to stop listening for input.
+            await view.wait()
+            if view.value is None:
+                # The view timed out - not sure how long the interaction lives for.
+                # await message.delete()
+                await message.edit('Your request has timed out.', view=None)
+            elif view.value:
+                # Confirmed - continue function execution.
+                pass
+            else:
+                # Cancelled - remove view and respond to user. Exit command.
+                # await message.delete()
+                await message.edit('Your request has been cancelled.', view=None)
+                return
+
+            # Now actually kick user from managed clans assuming the appropriate admin.
+            kicked = list()
+            for kickable in to_kick:
+
+                # This hopefully(?) always exists in the database.
+                # TODO: Needs a retry block in case of background token refresh causing a race condition. 
+                admin = get_admin_by_id(DATABASE, kickable.get('admin_id'))
+
+                # Now we can kick the user directly.
+                group_id = kickable.get('group_id')
+                group_name = kickable.get('group_name')
+                try:
+                    BNET.kick_member_from_group(
+                        admin.get('access_token')[0],
+                        kickable.get('group_id'),
+                        kickable.get('membership_type'),
+                        kickable.get('membership_id')
+                    )
+                    kicked.append(f"**{group_name}#{group_id}**")
+                except BungieInterfaceError:
+                    # Kick failed, close out nicely.
+                    pass
+
+            if not kicked:
+                await message.edit(f"Unable to kick **{user}**. Check clan admin configuration.", view=None)
+                return
+            
+            # Format success message and send.
+            await message.edit(f"Kicked **{user}** from {', '.join(kicked)}.", view=None)
+            return
+        
+        # Catch-all case if somehow the chosen method wasn't implemented.
+        await ctx.respond("This shouldn't have happened. Something went wrong.")
+        return
+
+    # Note additional checks for this command.
     @clan.command(
         name='join',
         description='Ask to join a specific clan.',
@@ -457,6 +594,7 @@ class Clan(commands.Cog):
     @list.error
     @kick.error
     @rank.error
+    @action.error
     @join.error
     async def clan_error(self, ctx: discord.ApplicationContext, error):
         self.log.info(error)
