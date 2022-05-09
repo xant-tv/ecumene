@@ -7,7 +7,7 @@ from urllib.parse import urlencode
 from types import SimpleNamespace
 
 MTYPES = dict(xbox=1, playstation=2, steam=3, blizzard=4, stadia=5, bungie=254)
-MLEVELS = dict(beginner=1, member=2, admin=3, founder=5) # Just like with Halo - Bungie never made a 4th.
+MLEVELS = dict(beginner=1, member=2, admin=3, actingfounder=4, founder=5) # Just like with Halo - Bungie never made a 4th.
 
 class BungieEnumerations():
     
@@ -17,8 +17,9 @@ class BungieEnumerations():
 
 class BungieInterfaceError(Exception):
 
-    def __init__(self, status):
+    def __init__(self, status, description):
         self.status = status
+        self.description = description
 
     def __str__(self):
         return f'BungieInterface received a {self.status}.'
@@ -78,7 +79,7 @@ class BungieInterface():
                 body = response.json()
             except requests.exceptions.RequestException as e:
                 raise BungieInterfaceError('RequestException', str(e)) from e
-            raise BungieInterfaceError(body.get('ErrorStatus', body.get('error_description')))
+            raise BungieInterfaceError(body.get('ErrorStatus'), body.get('error_description'))
         return response.json()
 
     def _strip_outer_(self, body):
@@ -163,3 +164,10 @@ class BungieInterface():
         response = self._execute_(requests.post, url, headers=headers)
         results = self._strip_outer_(response).get('results')
         return results
+
+    def set_membership_level(self, token, group_id, membership_type, membership_id, membership_level):
+        url = self._get_url_('GroupV2', group_id, 'Members', membership_type, membership_id, 'SetMembershipType', membership_level)
+        headers = self._get_headers_with_token_(token)
+        response = self._execute_(requests.post, url, headers=headers)
+        content = self._strip_outer_(response)
+        return content

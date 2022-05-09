@@ -2,6 +2,24 @@ import logging
 import discord
 
 # Defines a confirmation dialog.
+class EcumeneConfirm(discord.ui.View):
+
+    def __init__(self):
+        super().__init__()
+        self.value = None
+
+    # On press set inner value and stop the view from listening to more input.
+    @discord.ui.button(label="Confirm", style=discord.ButtonStyle.green)
+    async def confirm(self, button: discord.ui.Button, interaction: discord.Interaction):
+        self.value = True
+        self.stop()
+
+    # Similar except record cancel.
+    @discord.ui.button(label="Cancel", style=discord.ButtonStyle.grey)
+    async def cancel(self, button: discord.ui.Button, interaction: discord.Interaction):
+        self.value = False
+        self.stop()
+
 class EcumeneConfirmKick(discord.ui.View):
 
     def __init__(self):

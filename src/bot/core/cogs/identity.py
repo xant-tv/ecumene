@@ -42,7 +42,7 @@ class Identity(commands.Cog):
         purpose = ENUM_USER_REGISTRATION
         data = {
             'state': state,
-            'guild_id': str(ctx.guild.id),
+            'guild_id': str(ctx.guild.id), # Might have to make this optional because you can message commands to the bot directly, too.
             'request_id': str(ctx.author.id),
             'request_display': str(ctx.author),
             'purpose': purpose,
