@@ -204,7 +204,8 @@ class Clan(commands.Cog):
             member_info = result.get('member')
             group_id = group_info.get('groupId')
             group_name = group_info.get('name')
-            user_membership_type = member_info.get('memberType')
+            destiny_info = member_info.get('destinyUserInfo')
+            user_membership_type = destiny_info.get('membershipType')
 
             # Pull the group administrator and credentials.
             clan = get_clan_in_guild(DATABASE, str(ctx.guild.id), 'clan_id', group_id)
@@ -328,7 +329,8 @@ class Clan(commands.Cog):
             member_info = result.get('member')
             group_id = group_info.get('groupId')
             group_name = group_info.get('name')
-            user_membership_type = member_info.get('memberType')
+            destiny_info = member_info.get('destinyUserInfo')
+            user_membership_type = destiny_info.get('membershipType')
 
             # Pull the group administrator and credentials.
             clan = get_clan_in_guild(DATABASE, str(ctx.guild.id), 'clan_id', group_id)
