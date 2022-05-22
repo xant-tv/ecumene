@@ -25,8 +25,6 @@ class Admin(commands.Cog):
       - /admin register <id> <role> (basically /register but for a destiny clan)
       - /admin deregister <id> (remove a clan from bot administration)
       - /admin list (list clans and the roles that administrate them)
-      - /admin grant <clan> <role> (allows the selected role to run /clan commands for that clan)
-      - /admin revoke <clan> <role> (disallows the selected role from running /clan commands for that clan)
     """
     def __init__(self, log):
         self.log = log
@@ -181,6 +179,7 @@ class Admin(commands.Cog):
         await ctx.respond(f"Clans managed by Ecumene: {list_separator}{list_separator.join(clan_display)}")
 
     @register.error
+    @deregister.error
     @clans.error
     async def admin_error(self, ctx: discord.ApplicationContext, error):
         self.log.info(error)
