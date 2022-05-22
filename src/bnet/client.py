@@ -164,9 +164,8 @@ class BungieInterface():
         url = self._get_url_('Destiny2', membership_type, 'Profile', membership_id, 'LinkedProfiles')
         headers = self._get_headers_()
         response = self._execute_(requests.get, url, headers=headers)
-        profiles = self._strip_outer_(response).get('profiles')
-        # Only return first profile (should only be one)
-        return profiles[0]
+        content = self._strip_outer_(response)
+        return content
 
     def get_group_by_id(self, group_id):
         url = self._get_url_('GroupV2', group_id)

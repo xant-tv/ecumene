@@ -59,7 +59,8 @@ class EcumeneRouteHandler():
 
             # Obtain both the Discord and Destiny 2 identifiers.
             token_data = self.bnet.get_token(request.args.get('code'))
-            profile_data = self.bnet.get_linked_profiles(self.bnet.enum.mtype.bungie, token_data.get('membership_id'))
+            linked_profiles = self.bnet.get_linked_profiles(self.bnet.enum.mtype.bungie, token_data.get('membership_id'))
+            profile_data = linked_profiles.get('profiles')[0] # Only return the first active profile.
             bungie_name = f"{profile_data.get('bungieGlobalDisplayName')}#{str(profile_data.get('bungieGlobalDisplayNameCode')).zfill(4)}"
             
             # Package all this information and capture in database.
