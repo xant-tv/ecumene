@@ -68,8 +68,9 @@ class EcumeneRouteHandler():
                 backup_name = bnet_data.get('bungieGlobalDisplayName')
                 backup_code = bnet_data.get('bungieGlobalDisplayNameCode')
                 backup_data = self.bnet.find_destiny_player(backup_name, backup_code)
-                profile_data = backup_data[0]
-            bungie_name = f"{profile_data.get('bungieGlobalDisplayName')}#{str(profile_data.get('bungieGlobalDisplayNameCode')).zfill(4)}"
+                profile_data = backup_data
+            primary_profile = profile_data[0]
+            bungie_name = f"{primary_profile.get('bungieGlobalDisplayName')}#{str(primary_profile.get('bungieGlobalDisplayNameCode')).zfill(4)}"
             
             # Package all this information and capture in database.
             # Handles the case where the user is re-registering with either:
@@ -78,8 +79,8 @@ class EcumeneRouteHandler():
             user_id = result.get('request_id')[0]
             data = {
                 'discord_id': user_id,
-                'destiny_id': str(profile_data.get('membershipId')),
-                'destiny_mtype': profile_data.get('membershipType'),
+                'destiny_id': str(primary_profile.get('membershipId')),
+                'destiny_mtype': primary_profile.get('membershipType'),
                 'bnet_id': str(token_data.get('membership_id')),
                 'bnet_mtype': self.bnet.enum.mtype.bungie,
                 'registered_on': get_current_time()
