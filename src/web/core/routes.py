@@ -57,10 +57,18 @@ class EcumeneRouteHandler():
         # Put this in a try-except block so we can notify the user.
         try:
 
-            # Obtain both the Discord and Destiny 2 identifiers.
+            # Get linked profiles from token data.
             token_data = self.bnet.get_token(request.args.get('code'))
             linked_profiles = self.bnet.get_linked_profiles(self.bnet.enum.mtype.bungie, token_data.get('membership_id'))
-            profile_data = linked_profiles.get('profiles')[0] # Only return the first active profile.
+            
+            # Obtain both the Discord and Destiny 2 identifiers.
+            bnet_data = linked_profiles.get('bnetMembership')
+            profile_data = linked_profiles.get('profiles')
+            if not profile_data:
+                backup_name = bnet_data.get('bungieGlobalDisplayName')
+                backup_code = bnet_data.get('bungieGlobalDisplayNameCode')
+                backup_data = self.bnet.find_destiny_player(backup_name, backup_code)
+                profile_data = backup_data[0]
             bungie_name = f"{profile_data.get('bungieGlobalDisplayName')}#{str(profile_data.get('bungieGlobalDisplayNameCode')).zfill(4)}"
             
             # Package all this information and capture in database.

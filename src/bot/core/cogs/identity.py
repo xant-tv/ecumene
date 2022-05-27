@@ -137,7 +137,7 @@ class Identity(commands.Cog):
                 value=user_text,
                 inline=False
             )
-            embed.set_thumbnail(url=user.avatar.url)
+            embed.set_thumbnail(url=user.display_avatar.url)
             embed.set_footer(text=f"Ecumene", icon_url='https://ecumene.cc/static/assets/img/ecumene.png')
 
             await ctx.respond(embed=embed)
@@ -145,9 +145,16 @@ class Identity(commands.Cog):
 
         # Get information about the user from Bungie.
         content = BNET.get_linked_profiles(result.get('destiny_mtype')[0], result.get('destiny_id')[0])
-        profile_info = content.get('profiles')
         bnet_info = content.get('bnetMembership')
+        profile_info = content.get('profiles')
         legacy_info = content.get('profilesWithErrors')
+
+        # If there are no profiles, we can back up to the user search.
+        # TODO: Refactor this whole function later.
+        if not profile_info:
+            backup_name = bnet_info.get('bungieGlobalDisplayName')
+            backup_code = bnet_info.get('bungieGlobalDisplayNameCodes')
+            profile_info = BNET.find_destiny_player(backup_name, backup_code)
 
         # Now we need to get clan membership information for all active profiles.
         clans = list()
@@ -273,7 +280,7 @@ class Identity(commands.Cog):
                 inline=False
             )
         
-        embed.set_thumbnail(url=user.avatar.url)
+        embed.set_thumbnail(url=user.display_avatar.url)
         embed.set_footer(text=f"Ecumene | {ecumene_registered.strftime(DT_FMT)}", icon_url='https://ecumene.cc/static/assets/img/ecumene.png')
 
         # Close out context.
