@@ -35,7 +35,7 @@ class DatabaseService():
         self.models = self._build_models_from_json_(self._models)
 
         # Store engine. Use optimisting recycle to handle disconnects.
-        self.engine = create_engine(f"oracle+cx_oracle://{self.user}:{self.password}@{self.sid}", pool_recycle=3600)
+        self.engine = create_engine(f"oracle+cx_oracle://{self.user}:{self.password}@{self.sid}", pool_recycle=3600, pool_pre_ping=True)
         self._test_connect_()
         self.log.info(f'Connected as {self.user}@{self.sid}')
         if enforce_schema:

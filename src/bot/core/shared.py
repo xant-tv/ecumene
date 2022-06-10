@@ -13,9 +13,11 @@ DICT_OF_ALL_COMMANDS = {
     '/clan': 'clan.*',
     '/clan list': 'clan.list',
     '/clan kick': 'clan.kick',
-    '/clan promote': 'clan.promote',
-    '/clan demote': 'clan.demote',
-    '/clan join': 'clan.join'
+    '/clan rank': 'clan.rank',
+    '/clan join': 'clan.join',
+    '/clan action': 'clan.action',
+    '/clan status': 'clan.status',
+    '/clan cancel': 'clan.cancel'
 }
 DICT_OF_ALL_PERMISSIONS = {
     i: c for c, i in DICT_OF_ALL_COMMANDS.items() # Inverse dictionary of above.

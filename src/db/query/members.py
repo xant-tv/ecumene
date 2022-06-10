@@ -88,7 +88,7 @@ def add_user_to_blacklist(service: DatabaseService, guild_id, user_id):
         'guild_id': guild_id,
         'discord_id': user_id
     }
-    return service.insert('members', data)
+    return service.insert('blacklist', data)
 
 def remove_user_from_blacklist(service: DatabaseService, guild_id, user_id):
     table = service.retrieve_model('blacklist')
