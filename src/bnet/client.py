@@ -190,11 +190,32 @@ class BungieInterface():
         results = self._strip_outer_(response).get('results')
         return results
 
+    def get_pending_in_group(self, token, group_id):
+        url = self._get_url_('GroupV2', group_id, 'Members', 'Pending')
+        headers = self._get_headers_with_token_(token)
+        response = self._execute_(requests.get, url, headers=headers)
+        results = self._strip_outer_(response).get('results')
+        return results
+
+    def get_invited_individuals(self, token, group_id):
+        url = self._get_url_('GroupV2', group_id, 'Members', 'InvitedIndividuals')
+        headers = self._get_headers_with_token_(token)
+        response = self._execute_(requests.get, url, headers=headers)
+        results = self._strip_outer_(response).get('results')
+        return results
+
     def invite_user_to_group(self, token, group_id, membership_type, membership_id):
         url = self._get_url_('GroupV2', group_id, 'Members', 'IndividualInvite', membership_type, membership_id)
         headers = self._get_headers_with_token_(token)
         # For some reason this expects a body, even if it's empty.
         response = self._execute_(requests.post, url, headers=headers, json=dict())
+        content = self._strip_outer_(response)
+        return content
+
+    def cancel_invite_to_group(self, token, group_id, membership_type, membership_id):
+        url = self._get_url_('GroupV2', group_id, 'Members', 'IndividualInviteCancel', membership_type, membership_id)
+        headers = self._get_headers_with_token_(token)
+        response = self._execute_(requests.post, url, headers=headers)
         content = self._strip_outer_(response)
         return content
 

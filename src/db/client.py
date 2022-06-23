@@ -34,7 +34,7 @@ class DatabaseService():
         self.metadata = MetaData()
         self.models = self._build_models_from_json_(self._models)
 
-        # Store engine. Use optimisting recycle to handle disconnects.
+        # Store engine. Use recycle and pre-ping to handle disconnects.
         self.engine = create_engine(f"oracle+cx_oracle://{self.user}:{self.password}@{self.sid}", pool_recycle=3600, pool_pre_ping=True)
         self._test_connect_()
         self.log.info(f'Connected as {self.user}@{self.sid}')
@@ -42,7 +42,8 @@ class DatabaseService():
             self._enforce_schema_()
 
     def _test_connect_(self):
-        qry = "select SYSDATE from DUAL"
+        # This will need a rework to something agnostic to database.
+        qry = "select SYSDATE from DUAL" 
         return self.execute(qry)
 
     def _map_column_(self, jtype, size=None, **kwargs):
