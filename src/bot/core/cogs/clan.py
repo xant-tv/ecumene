@@ -6,7 +6,7 @@ from discord.ext import commands
 from bnet.client import BungieInterfaceError
 
 from bot.core.checks import EcumeneCheck
-from bot.core.shared import DATABASE, BNET, DICT_OF_ALL_COMMANDS, PLATFORMS, EMOJIS
+from bot.core.shared import DATABASE, BNET, DICT_OF_ALL_COMMANDS, PLATFORMS, EMOJIS, WEB_RESOURCES
 from bot.core.interactions import EcumeneConfirm, EcumeneConfirmKick
 from db.query.clans import get_all_clans_in_guild, get_clan_in_guild
 from db.query.members import get_members_matching, get_member_by_id
@@ -27,8 +27,10 @@ class Clan(commands.Cog):
       - /clan kick <user> (kick a user from the clan, has interactive prompt but can be forced)
       - /clan join <role> (doesn't actually join the clan, but prompts admin account to send a clan invite)
       - /clan rank <user> (this is used to promote and demote users)
-      - /clan action <method> <user> <clan> (used for direct interaction methods without discord link)
       - /clan status <role> (check the status of invites for the specified clan)
+      - /clan invite <method> <user> <clan> (send or cancel invite for a user)
+      - /clan request <method> <user> <clan> (accept or reject a pending request to join)
+      - /clan action <method> <user> <clan> (used for direct interaction methods without discord link)
     """
     def __init__(self, log):
         self.log = log
@@ -492,22 +494,23 @@ class Clan(commands.Cog):
         )
 
         embed.set_thumbnail(url=BNET.web + detail.get('avatarPath'))
-        embed.set_footer(text=f"Ecumene", icon_url='https://ecumene.cc/static/assets/img/ecumene.png')
+        embed.set_footer(text=f"ecumene.cc", icon_url=WEB_RESOURCES.logo)
 
         # Format success message and send.
         await ctx.respond(embed=embed)
 
     @clan.command(
-        name='cancel',
-        description='Cancel a clan invite for the specified individual.',
+        name='invite',
+        description='Send or cancel a clan invite to the specified individual.',
         options=[
-            discord.Option(discord.Role, name='clan', description='Clan you wish to interact with.'),
-            discord.Option(discord.Member, name='user', description='User for which to cancel invite.')
+            discord.Option(str, name='method', description='The choice of invite interaction.', choices=['Send', 'Cancel']),
+            discord.Option(discord.Member, name='user', description='User for which to send or cancel invite.'),
+            discord.Option(discord.Role, name='clan', description='Clan relevant to this interaction.')
         ]
     )
     @commands.check(CHECKS.user_has_privilege)
-    async def cancel(self, ctx: discord.ApplicationContext, clan: discord.Role, user: discord.Member):
-        self.log.info('Command "/clan cancel" was invoked')
+    async def invite(self, ctx: discord.ApplicationContext, method: str, user: discord.Member, clan: discord.Role):
+        self.log.info('Command "/clan invite" was invoked')
 
         # Defer response until processing is done.
         await ctx.defer(ephemeral=True)
@@ -529,27 +532,128 @@ class Clan(commands.Cog):
         # TODO: Needs a retry block in case of background token refresh causing a race condition. 
         admin = get_admin_by_id(DATABASE, group.get('admin_id')[0])
 
-        # Try and cancel invite.
-        try:
-            BNET.cancel_invite_to_group(
-                admin.get('access_token')[0], 
-                group_id, 
-                member.get('destiny_mtype')[0],  
-                member.get('destiny_id')[0]
-            )
-        except BungieInterfaceError:
-            # Data retrieval failed. Throw a simple error.
-            await ctx.respond(f"Failed to cancel invite to {clan.mention} for {user.mention}. Are you sure this invite exists?")
+        # Passthrough in case method is poorly configured.
+        if not method:
+            pass
+
+        elif method == 'Send':
+            try:
+                BNET.invite_user_to_group(
+                    admin.get('access_token')[0],
+                    group_id,
+                    member.get('destiny_mtype')[0],
+                    member.get('destiny_id')[0]
+                )
+            except BungieInterfaceError:
+                # Sending invite failed. Close out nicely.
+                await ctx.respond(f"Could not send {user.mention} a request to join {clan.mention}. The clan might be full.")
+                return
+            
+            # Format success message and send.
+            await ctx.respond(f"Sent {user.mention} an invite to {clan.mention}.")
             return
 
-        # Format success message and send.
-        await ctx.respond(f"Cancelled invite to {clan.mention} for {user.mention}.")
+        elif method == 'Cancel':
+            try:
+                BNET.cancel_invite_to_group(
+                    admin.get('access_token')[0], 
+                    group_id, 
+                    member.get('destiny_mtype')[0],  
+                    member.get('destiny_id')[0]
+                )
+            except BungieInterfaceError:
+                # Cancellation failed. Throw a simple error.
+                await ctx.respond(f"Failed to cancel invite to {clan.mention} for {user.mention}. Are you sure this invite exists?")
+                return
+
+            # Format success message and send.
+            await ctx.respond(f"Cancelled invite to {clan.mention} for {user.mention}.")
+            return
+        
+        # Catch-all case if somehow the chosen method wasn't implemented.
+        await ctx.respond("This shouldn't have happened. Something went wrong.")
+        return
+
+    @clan.command(
+        name='request',
+        description="Approve or deny an individual's request to join.",
+        options=[
+            discord.Option(str, name='method', description='The choice of request interaction.', choices=['Approve', 'Deny']),
+            discord.Option(discord.Member, name='user', description='User for which to accept or reject request.'),
+            discord.Option(discord.Role, name='clan', description='Clan relevant to this interaction.')
+        ]
+    )
+    @commands.check(CHECKS.user_has_privilege)
+    async def request(self, ctx: discord.ApplicationContext, method: str, user: discord.Member, clan: discord.Role):
+        self.log.info('Command "/clan request" was invoked')
+        
+        # Defer response until processing is done.
+        await ctx.defer(ephemeral=True)
+
+        # Identify the clan based on the role mentioned.
+        # Pull the group administrator and credentials.
+        group = get_clan_in_guild(DATABASE, str(ctx.guild.id), 'role_id', str(clan.id))
+        if not group:
+            await ctx.respond(f"There is no clan associated with {clan.mention}.")
+            return
+        group_id = group.get('clan_id')[0]
+
+        # Get the member record for this user.
+        member = get_member_by_id(DATABASE, 'discord_id', str(user.id))
+        if not member:
+            await ctx.respond(f"User {user.mention} is not registered with Ecumene.")
+            return
+
+        # TODO: Needs a retry block in case of background token refresh causing a race condition. 
+        admin = get_admin_by_id(DATABASE, group.get('admin_id')[0])
+
+        # Passthrough in case method is poorly configured.
+        if not method:
+            pass
+
+        elif method == 'Accept':
+            try:
+                BNET.accept_request_to_join_group(
+                    admin.get('access_token')[0],
+                    group_id,
+                    member.get('destiny_mtype')[0],
+                    member.get('destiny_id')[0]
+                )
+            except BungieInterfaceError:
+                # Acceptance failed. Close out nicely.
+                await ctx.respond(f"Could not accept {user.mention} into {clan.mention}. Is this user still a pending member?")
+                return
+            
+            # Format success message and send.
+            await ctx.respond(f"Accepted {user.mention} into {clan.mention}.")
+            return
+
+        elif method == 'Deny':
+            try:
+                BNET.deny_request_to_join_group(
+                    admin.get('access_token')[0], 
+                    group_id, 
+                    member.get('destiny_mtype')[0],  
+                    member.get('destiny_id')[0]
+                )
+            except BungieInterfaceError:
+                # Denial failed. Throw a simple error.
+                await ctx.respond(f"Failed to deny request to join {clan.mention} from {user.mention}. Is this user still a pending member?")
+                return
+
+            # Format success message and send.
+            await ctx.respond(f"Denied request to join {clan.mention} from {user.mention}.")
+            return
+        
+        # Catch-all case if somehow the chosen method wasn't implemented.
+        await ctx.respond("This shouldn't have happened. Something went wrong.")
+        return
 
     @clan.command(
         name='action',
         description='Interact with the Bungie clan directly.',
         options=[
-            discord.Option(str, name='method', description='Method of interaction.', choices=['Kick', 'Cancel Invite']),
+            discord.Option(str, name='method', description='Method of interaction.', choices=['Kick', 'Send Invite', 'Cancel Invite', 'Approve Request', 'Deny Request']),
             discord.Option(str, name='user', description='Bungie name of player.'),
             discord.Option(discord.Role, name='clan', description='Clan you wish to interact with.', required=False)
         ]
@@ -692,6 +796,10 @@ class Clan(commands.Cog):
             await message.edit(f"Kicked **{user}** from {', '.join(kicked)}.", view=None)
             return
         
+        elif method == 'Send Invite':
+            await ctx.respond("This isn't implemented yet. Try again later.")
+            return
+
         # To cancel invites, we need some clan information.
         elif method == 'Cancel Invite':
 
@@ -747,6 +855,14 @@ class Clan(commands.Cog):
 
             # Format success message and send.
             await ctx.respond(f"Cancelled invite to {clan.mention} for **{user}**.")
+            return
+
+        elif method == 'Approve Request':
+            await ctx.respond("This isn't implemented yet. Try again later.")
+            return
+
+        elif method == 'Deny Request':
+            await ctx.respond("This isn't implemented yet. Try again later.")
             return
 
         # Catch-all case if somehow the chosen method wasn't implemented.
@@ -809,7 +925,8 @@ class Clan(commands.Cog):
     @kick.error
     @rank.error
     @status.error
-    @cancel.error
+    @invite.error
+    @request.error
     @action.error
     @join.error
     async def clan_error(self, ctx: discord.ApplicationContext, error):

@@ -17,7 +17,8 @@ DICT_OF_ALL_COMMANDS = {
     '/clan join': 'clan.join',
     '/clan action': 'clan.action',
     '/clan status': 'clan.status',
-    '/clan cancel': 'clan.cancel'
+    '/clan invite': 'clan.invite',
+    '/clan request': 'clan.request'
 }
 DICT_OF_ALL_PERMISSIONS = {
     i: c for c, i in DICT_OF_ALL_COMMANDS.items() # Inverse dictionary of above.
@@ -56,3 +57,7 @@ LEVELS = {
     4: 'Acting Founder',
     5: 'Founder'
 }
+
+WEB_RESOURCES = SimpleNamespace(**{
+    'logo': 'https://ecumene.cc/static/assets/img/ecumene.png'
+})

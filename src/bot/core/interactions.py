@@ -56,51 +56,31 @@ class EcumeneConfirmRemoveClan(discord.ui.View):
         self.value = False
         self.stop()
 
-# Defines a custom Select containing colour options that the user can choose. 
-# The callback function of this class is called when the user changes their choice
-class EcumeneDropdown(discord.ui.Select):
+# Defines a custom dropdown that is built dynamically.
+# We have to do this as decorators require fixed options.
+# However, platform options need to be built per request.
+class EcumenePlatformDropdown(discord.ui.Select):
 
-    def __init__(self, options, limit=False):
-        self.log = logging.getLogger(f'{self.__module__}.{self.__class__.__name__}')
-
+    def __init__(self, options):
         # The placeholder is what will be shown when no option is chosen.
         # The min and max values indicate we can only pick one of the three options
         # The options parameter defines the dropdown options. We defined this above
         super().__init__(
-            placeholder="Choose your favourite colour...",
+            placeholder="Choose your preferred platform...",
             min_values=1,
             max_values=1,
             options=options
         )
-        self.parent = None
-        self.limit = limit
-        self.disabled = limit
-
-    def set_parent(self, parent: discord.Message):
-        # Use this make parent message accessible within class scope.
-        self.parent = parent
-        self.disabled = False
 
     async def callback(self, interaction: discord.Interaction):
-        # Use the interaction object to send a response message containing
-        # the user's favourite colour or choice. The self object refers to the
-        # Select object, and the values attribute gets a list of the user's
-        # selected options. We only want the first one.
-        await interaction.channel.send(
-            f"Hey, {interaction.user.mention}'s favourite colour is {self.values[0]}. 🤣"
-        )
-        if self.limit:
-            # Delete attached parent if this is a one-time interaction.
-            await self.parent.delete()
+        # Use the interaction object to send a response message if need be.
+        # In this case, we capture value within the view object and then stop interaction.
+        self.view.value = self.values[0]
+        self.view.stop()
 
-class EcumeneView(discord.ui.View):
+class EcumeneSelectPlatform(discord.ui.View):
 
-    def __init__(self, children):
+    def __init__(self, dropdown):
         super().__init__()
-        for child in children:
-            self.add_item(child)
-
-    def attach_parent(self, parent):
-        # Attach parent to all children.
-        for child in self.children:
-            child.set_parent(parent)
+        self.add_item(dropdown)
+        self.value = None

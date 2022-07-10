@@ -6,7 +6,7 @@ from discord.ext import commands
 
 from bot.core.checks import EcumeneCheck
 from bot.core.interactions import EcumeneConfirmRemoveClan
-from bot.core.shared import DATABASE, BNET, DICT_OF_ALL_COMMANDS
+from bot.core.shared import DATABASE, BNET, DICT_OF_ALL_COMMANDS, WEB_RESOURCES
 from db.query.transactions import update_transaction
 from db.query.clans import get_all_clans_in_guild, get_clan_in_guild, delete_clan_in_guild
 from util.encrypt import generate_state
@@ -75,9 +75,24 @@ class Admin(commands.Cog):
 
         # Generate a message embed.
         embed = discord.Embed(
-            title='Ecumene Registration',
+            title='Ecumene Clan Admin Registration',
             url=url,
             description=f"Your request for elevated access has been noted. Please authorise accordingly."
+        )
+        embed.set_thumbnail(url=WEB_RESOURCES.logo)
+        embed.set_footer(text=f"ecumene.cc", icon_url=WEB_RESOURCES.logo)
+
+        # Generate message content.
+        content = f" • Admin registration is for one server only."
+        content += f"\n • Admin registration will allow the bot to manage your clan."
+        content += f"\n • Only one admin can be registered per clan."
+        content += f"\n • One clan can be independently registered on multiple servers."
+        content += f"\n • Please register with a founder or in-game admin account."
+        content += f"\n • That account must only have one active platform profile."
+        embed.add_field(
+            name=f'Important Information',
+            value=content,
+            inline=False
         )
 
         # Respond to the initial command.

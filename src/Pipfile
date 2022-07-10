@@ -19,4 +19,4 @@ humanize = "==4.0.0"
 pytest = "*"
 
 [pipenv]
-allow_prereleases = true
+allow_prereleases = false

@@ -219,6 +219,47 @@ class BungieInterface():
         content = self._strip_outer_(response)
         return content
 
+    def accept_request_to_join_group(self, token, group_id, membership_type, membership_id):
+        url = self._get_url_('GroupV2', group_id, 'Members', 'Approve', membership_type, membership_id)
+        headers = self._get_headers_with_token_(token)
+        # For some reason this expects a body, even if it's empty.
+        response = self._execute_(requests.post, url, headers=headers, json=dict())
+        content = self._strip_outer_(response)
+        return content
+
+    def _deny_request_to_join_group_(self, token, group_id, membership_type, membership_id):
+        """This function should not be called even though it is simpler. Bungie has not implemented this endpoint. We can dream."""
+        url = self._get_url_('GroupV2', group_id, 'Members', 'Deny', membership_type, membership_id)
+        headers = self._get_headers_with_token_(token)
+        # For some reason this expects a body, even if it's empty.
+        response = self._execute_(requests.post, url, headers=headers, json=dict())
+        content = self._strip_outer_(response)
+        return content
+
+    def deny_request_to_join_group(self, token, group_id, membership_type, membership_id):
+        # Bungie is bad so there is no single denial API endpoint.
+        # Instead, we must deny a single user from the bulk endpoint which requires different construction.
+        url = self._get_url_('GroupV2', group_id, 'Members', 'DenyList')
+        headers = self._get_headers_with_token_(token)
+        data = {
+            'memberships': [
+                {
+                    'membershipId': membership_id,
+                    'membershipType': membership_type
+                }
+            ]
+        }
+        # Note that this response will probably return a successful HTTP status.
+        # However, the _individual_ entity response contained within will return an internal status code.
+        response = self._execute_(requests.post, url, headers=headers, json=data)
+        content = self._strip_outer_(response)
+        # Inspect first entity for result.
+        # This integer represents an internal value which can be any of over a hundred codes.
+        # For now, assume all responses other than "1" to represent failure.
+        if content[0].get('result') != 1:
+            raise BungieInterfaceError('RequestFailed', '')
+        return content
+
     def kick_member_from_group(self, token, group_id, membership_type, membership_id):
         url = self._get_url_('GroupV2', group_id, 'Members', membership_type, membership_id, 'Kick')
         headers = self._get_headers_with_token_(token)

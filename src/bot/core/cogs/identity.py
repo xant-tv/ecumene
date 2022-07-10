@@ -4,15 +4,16 @@ from discord.commands import slash_command
 from discord.ext import commands
 
 from bot.core.checks import EcumeneCheck
-from bot.core.shared import DATABASE, BNET, PLATFORMS, LEVELS, EMOJIS
+from bot.core.shared import DATABASE, BNET, PLATFORMS, LEVELS, EMOJIS, WEB_RESOURCES
+from bot.core.interactions import EcumenePlatformDropdown, EcumeneSelectPlatform
 from db.query.clans import get_all_clans_in_guild
-from db.query.members import get_member_by_id
+from db.query.members import get_member_by_id, update_member_details
 from db.query.transactions import update_transaction
 from util.encrypt import generate_state
-from util.time import get_current_time, epoch_to_time, bnet_to_time, get_timedelta, humanize_timedelta
+from util.time import get_current_time, epoch_to_time, bnet_to_time, time_to_discord, get_timedelta, humanize_timedelta
 from util.enum import ENUM_USER_REGISTRATION
 
-DT_FMT = '%B %d %Y %H:%M:%S'
+DT_FMT = '{dt.day} {dt:%B} {dt.year} {dt:%H}:{dt:%M}:{dt:%S}'
 CHECKS = EcumeneCheck()
 
 # TODO: Commands that will need to be implemented.
@@ -68,6 +69,18 @@ class Identity(commands.Cog):
             title='Ecumene Registration',
             url=url,
             description=f"Your interest has been noted. Please click the link and follow instructions."
+        )
+        embed.set_thumbnail(url=WEB_RESOURCES.logo)
+        embed.set_footer(text=f"ecumene.cc", icon_url=WEB_RESOURCES.logo)
+
+        # Generate message content.
+        content = f" • Registration is global across all servers."
+        content += f"\n • Registration is supported for any platform."
+        content += f"\n • Only one Bungie account may be linked to Discord at a time."
+        embed.add_field(
+            name=f'Important Information',
+            value=content,
+            inline=False
         )
 
         # Respond to the initial command.
@@ -129,7 +142,7 @@ class Identity(commands.Cog):
                 user_display += f" {EMOJIS.owner}"
             if user.premium_since:
                 user_display += f" {EMOJIS.nitro}"
-            user_text = f"{user_display}\nJoined: {user.joined_at.strftime(DT_FMT)} ({humanize_timedelta(get_timedelta(user.joined_at))})"
+            user_text = f"{user_display}\nJoined: {time_to_discord(user.joined_at)} ({humanize_timedelta(get_timedelta(user.joined_at))})"
             
             # Add to embed as top-most field.
             embed.add_field(
@@ -138,7 +151,7 @@ class Identity(commands.Cog):
                 inline=False
             )
             embed.set_thumbnail(url=user.display_avatar.url)
-            embed.set_footer(text=f"Ecumene", icon_url='https://ecumene.cc/static/assets/img/ecumene.png')
+            embed.set_footer(text=f"ecumene.cc", icon_url=WEB_RESOURCES.logo)
 
             await ctx.respond(embed=embed)
             return
@@ -184,8 +197,9 @@ class Identity(commands.Cog):
         for clan in sorted_clans:
             
             # Flag is the clan is managed by ecumene while we're at it.
-            if clan.get('group_id') in managed.get('clan_id'):
-                clan['ecumene_managed'] = True
+            if managed:
+                if clan.get('group_id') in managed.get('clan_id'):
+                    clan['ecumene_managed'] = True
 
             # Hit and parse members API - we are only doing this for active profiles.
             members = BNET.get_members_in_group(clan.get('group_id'))
@@ -208,7 +222,7 @@ class Identity(commands.Cog):
             user_display += f" {EMOJIS.owner}"
         if user.premium_since:
             user_display += f" {EMOJIS.nitro}"
-        user_text = f"{user_display}\nJoined: {user.joined_at.strftime(DT_FMT)} ({humanize_timedelta(get_timedelta(user.joined_at))})"
+        user_text = f"{user_display}\nJoined: {time_to_discord(user.joined_at)} ({humanize_timedelta(get_timedelta(user.joined_at))})"
         
         # Add to embed as top-most field.
         embed.add_field(
@@ -252,7 +266,7 @@ class Identity(commands.Cog):
         
         # Account text to display.
         account_text = '\n'.join(accounts)
-        account_text += f"\n\nLast Played:\n{last_played.strftime(DT_FMT)} ({humanize_timedelta(get_timedelta(last_played))})"
+        account_text += f"\n\nLast Played:\n{time_to_discord(last_played)} ({humanize_timedelta(get_timedelta(last_played))})"
 
         # Add to embed as second field.
         embed.add_field(
@@ -276,12 +290,125 @@ class Identity(commands.Cog):
             # Create a field for each clan.
             embed.add_field(
                 name=clan_display,
-                value=f"{clan.get('member_level')}\nJoined: {join_date.strftime(DT_FMT)} ({humanize_timedelta(join_date_delta)})",
+                value=f"{clan.get('member_level')}\nJoined: {time_to_discord(join_date)} ({humanize_timedelta(join_date_delta)})",
                 inline=False
             )
         
         embed.set_thumbnail(url=user.display_avatar.url)
-        embed.set_footer(text=f"Ecumene | {ecumene_registered.strftime(DT_FMT)}", icon_url='https://ecumene.cc/static/assets/img/ecumene.png')
+        embed.set_footer(text=f"ecumene.cc | {DT_FMT.format(dt=ecumene_registered)} ECMNST", icon_url=WEB_RESOURCES.logo)
 
         # Close out context.
         await ctx.respond(embed=embed)
+
+    @slash_command(
+        name='profile', 
+        description="Set your primary profile."
+    )
+    async def profile(self, ctx: discord.ApplicationContext):
+        self.log.info('Command "/profile" was invoked')
+
+        # Defer response until processing is done.
+        await ctx.defer(ephemeral=True)
+        
+        # Get the member record for this user.
+        member = get_member_by_id(DATABASE, 'discord_id', str(ctx.author.id))
+        if not member:
+            await ctx.respond(f"You are not registered with Ecumene. Please register to gain access to this service.")
+            return
+            
+        # Existing user information.
+        membership_id = member.get('destiny_id')[0]
+        platform_id = member.get('destiny_mtype')[0]
+        bungie_id = member.get('bnet_id')[0]
+
+        # We need to search for all user profile options.
+        linked_profiles = BNET.get_linked_profiles(BNET.enum.mtype.bungie, bungie_id)
+        profile_data = linked_profiles.get('profiles')
+        profile_map = dict()
+        for profile in profile_data:
+            profile_type = profile.get('membershipType')
+            profile_map[profile_type] = profile
+        primary_profile = profile_map.get(platform_id)
+        if not primary_profile:
+            primary_profile = profile_data[0]
+        display_name = primary_profile.get('displayName')
+        bungie_name = f"{primary_profile.get('bungieGlobalDisplayName')}#{str(primary_profile.get('bungieGlobalDisplayNameCode')).zfill(4)}"
+
+        # Extract flags about cross-save and multiple profiles.
+        cross_save = False
+        if primary_profile.get('crossSaveOverride'):
+            cross_save = True
+        has_multiple = False
+        if len(profile_data) > 1:
+            has_multiple = True
+
+        # Construct field information.
+        content_header = 'I have detected one profile linked to this account.'
+        if cross_save:
+            content_header = 'I detect this user has cross-save enabled.'
+        if has_multiple:
+            content_header = 'It appears this user has multiple active platforms.'
+        content_info = "\n\nThis user's primary profile is set to:"
+        content_info += f'\n**{display_name}** ({membership_id}:{platform_id}) {getattr(EMOJIS, PLATFORMS.get(platform_id))}'
+        if cross_save:
+            content_info += f' {EMOJIS.cross_save}'
+        if has_multiple:
+            content_info += '\n\nAll available profiles are:'
+            for profile_id in sorted(profile_map.keys()):
+                profile_name = profile_map[profile_id].get('displayName')
+                content_info += f'\n**{profile_name}** ({membership_id}:{profile_id}) {getattr(EMOJIS, PLATFORMS.get(profile_id))}'
+        content_footer = '\n\nThis user has no other available profiles.'
+        if cross_save:
+            content_footer = "\n\nOnly the cross save account may be chosen as an active profile."
+        if has_multiple:
+            content_footer ="\n\nUse the dropdown below to select a primary profile."
+
+        # Display current user information.
+        content = content_header + content_info + content_footer
+
+        # Provide select options for users who are allowed to change profile.
+        # This is only for the case where there are multiple profiles.
+        if has_multiple:
+            
+            # Generate option objects.
+            options = list()
+            for profile_id in sorted(profile_map.keys()):
+                platform = PLATFORMS.get(profile_id)
+                label = platform.capitalize()
+                emoji = getattr(EMOJIS, platform)
+                option = discord.SelectOption(
+                    label=label, emoji=emoji
+                )
+                options.append(option)
+            
+            # Try making an interaction with this.
+            dropdown = EcumenePlatformDropdown(options)
+            view = EcumeneSelectPlatform(dropdown)
+
+            # Respond with both the embed and the interactive view.
+            message = await ctx.respond(content, view=view)
+
+            # Wait for the view to stop listening for input.
+            await view.wait()
+            if view.value is None:
+                # The view timed out - timeout default is 3 minutes.
+                # await message.delete()
+                await message.edit('Your request has timed out.', view=None)
+                return
+            elif view.value:
+                # Value chosen - continue function execution.
+                pass
+            
+            # Update value in database to reflect current settings.
+            target_mtype = getattr(BNET.enum.mtype, view.value.lower())
+            data = {
+                'discord_id': str(ctx.author.id),
+                'destiny_mtype': target_mtype
+            }
+            update_member_details(DATABASE, 'discord_id', data)
+
+            # Recreate embed with new information.
+            await message.edit(f'Request acknowledged. Primary profile set to **{view.value}**.',  view=None)
+            return
+
+        await ctx.respond(content)
