@@ -1,7 +1,6 @@
 import discord
 
 from bot.core.checks import get_lineage
-from util.encrypt import generate_uuid
 from util.enum import AuditRecordType
 from util.time import get_current_time
 
