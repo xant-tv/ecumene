@@ -275,6 +275,46 @@
                         ]
                     }
                 ]
+            },
+            {
+                "name": "history",
+                "columns": [
+                    {
+                        "name": "record_id",
+                        "type": "string",
+                        "size": 100,
+                        "primary_key": 1
+                    },
+                    {
+                        "name": "command_id",
+                        "type": "string",
+                        "size": 100
+                    },
+                    {
+                        "name": "invoked_at",
+                        "type": "bigint"
+                    },
+                    {
+                        "name": "guild_id",
+                        "type": "string",
+                        "size": 100
+                    },
+                    {
+                        "name": "discord_id",
+                        "type": "string",
+                        "size": 100
+                    },
+                    {
+                        "name": "command_options",
+                        "type": "string",
+                        "size": 4000
+                    },
+                    {
+                        "name": "status",
+                        "type": "string",
+                        "size": 200
+                    }
+                ]
             }
         ] 
     }
