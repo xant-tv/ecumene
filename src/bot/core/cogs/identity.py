@@ -4,27 +4,26 @@ from discord.commands import slash_command
 from discord.ext import commands
 
 from bot.core.checks import EcumeneCheck
-from bot.core.shared import DATABASE, BNET, PLATFORMS, LEVELS, EMOJIS, WEB_RESOURCES
 from bot.core.interactions import EcumenePlatformDropdown, EcumeneSelectPlatform
+from bot.core.routines import routine_before, routine_after, routine_error
+from bot.core.shared import DATABASE, BNET, PLATFORMS, LEVELS, EMOJIS, WEB_RESOURCES
 from db.query.clans import get_all_clans_in_guild
 from db.query.members import get_member_by_id, update_member_details
 from db.query.transactions import update_transaction
 from util.encrypt import generate_state
+from util.enum import TransactionType, AuditRecordType
 from util.time import get_current_time, epoch_to_time, bnet_to_time, time_to_discord, get_timedelta, humanize_timedelta
-from util.enum import ENUM_USER_REGISTRATION
 
 DT_FMT = '{dt.day} {dt:%B} {dt.year} {dt:%H}:{dt:%M}:{dt:%S}'
 CHECKS = EcumeneCheck()
-
-# TODO: Commands that will need to be implemented.
-#   - /whoami (print stored user data back)
 
 class Identity(commands.Cog):
     """
     Cog holding all identity-related functions.
     This includes:
       - /register (user registration)
-      - /whoami (user identification check)
+      - /profile (allows user to select preferred platform)
+      - /inspect (user identification check)
     """
     def __init__(self, log):
         self.log = log
@@ -36,7 +35,6 @@ class Identity(commands.Cog):
     )
     async def register(self, ctx: discord.ApplicationContext):
         """Register with Ecumene leadership."""
-        self.log.info('Command "/register" was invoked')
 
         # Defer response until processing is done.
         await ctx.defer(ephemeral=True)
@@ -44,11 +42,12 @@ class Identity(commands.Cog):
         # If no guild, then something went wrong.
         if not ctx.guild:
             await ctx.respond('This command has to be run within a server context.')
+            await routine_after(ctx, AuditRecordType.FAILED_CONTEXT)
             return
 
         # Capture message information and generate a state.
         state = generate_state()
-        purpose = ENUM_USER_REGISTRATION
+        purpose = TransactionType.USER.value
         data = {
             'state': state,
             'guild_id': str(ctx.guild.id), # Might have to make this optional because you can message commands to the bot directly, too.
@@ -97,6 +96,7 @@ class Identity(commands.Cog):
 
         # Close out context.
         await ctx.respond("Negotiations have begun. Enact impulse.")
+        await routine_after(ctx, AuditRecordType.SUCCESS)
 
     @slash_command(
         name='inspect', 
@@ -106,7 +106,6 @@ class Identity(commands.Cog):
         ]
     )
     async def inspect(self, ctx: discord.ApplicationContext, user: discord.Member):
-        self.log.info('Command "/inspect" was invoked')
 
         # Defer response until processing is done.
         await ctx.defer(ephemeral=True)
@@ -118,6 +117,7 @@ class Identity(commands.Cog):
         # If no guild, then something went wrong.
         if not ctx.guild:
             await ctx.respond('This command has to be run within a server context.')
+            await routine_after(ctx, AuditRecordType.FAILED_CONTEXT)
             return
         
         # Get the author's identity.
@@ -154,6 +154,7 @@ class Identity(commands.Cog):
             embed.set_footer(text=f"ecumene.cc", icon_url=WEB_RESOURCES.logo)
 
             await ctx.respond(embed=embed)
+            await routine_after(ctx, AuditRecordType.SUCCESS)
             return
 
         # Get information about the user from Bungie.
@@ -299,13 +300,13 @@ class Identity(commands.Cog):
 
         # Close out context.
         await ctx.respond(embed=embed)
+        await routine_after(ctx, AuditRecordType.SUCCESS)
 
     @slash_command(
         name='profile', 
         description="Set your primary profile."
     )
     async def profile(self, ctx: discord.ApplicationContext):
-        self.log.info('Command "/profile" was invoked')
 
         # Defer response until processing is done.
         await ctx.defer(ephemeral=True)
@@ -314,6 +315,7 @@ class Identity(commands.Cog):
         member = get_member_by_id(DATABASE, 'discord_id', str(ctx.author.id))
         if not member:
             await ctx.respond(f"You are not registered with Ecumene. Please register to gain access to this service.")
+            await routine_after(ctx, AuditRecordType.FAILED_UNREGISTERED)
             return
             
         # Existing user information.
@@ -394,6 +396,7 @@ class Identity(commands.Cog):
                 # The view timed out - timeout default is 3 minutes.
                 # await message.delete()
                 await message.edit('Your request has timed out.', view=None)
+                await routine_after(ctx, AuditRecordType.FAILED_TIMEOUT)
                 return
             elif view.value:
                 # Value chosen - continue function execution.
@@ -409,6 +412,20 @@ class Identity(commands.Cog):
 
             # Recreate embed with new information.
             await message.edit(f'Request acknowledged. Primary profile set to **{view.value}**.',  view=None)
+            await routine_after(ctx, AuditRecordType.SUCCESS)
             return
 
         await ctx.respond(content)
+        await routine_after(ctx, AuditRecordType.SUCCESS)
+
+    @register.before_invoke
+    @inspect.before_invoke
+    @profile.before_invoke    
+    async def inspect_before(self, ctx: discord.ApplicationContext):
+        await routine_before(ctx, self.log)
+
+    @register.error
+    @inspect.error
+    @profile.error
+    async def inspect_error(self, ctx: discord.ApplicationContext, error):
+        await routine_error(ctx, self.log, error)

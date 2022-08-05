@@ -1,17 +1,17 @@
 import discord
 
-from discord import CheckFailure
 from discord.commands import slash_command, SlashCommandGroup
 from discord.ext import commands
 
 from bot.core.checks import EcumeneCheck
 from bot.core.interactions import EcumeneConfirmRemoveClan
-from bot.core.shared import DATABASE, BNET, DICT_OF_ALL_COMMANDS, WEB_RESOURCES
-from db.query.transactions import update_transaction
+from bot.core.routines import routine_before, routine_after, routine_error
+from bot.core.shared import DATABASE, BNET, DICT_OF_ALL_GRANTABLE_COMMANDS, WEB_RESOURCES
 from db.query.clans import get_all_clans_in_guild, get_clan_in_guild, delete_clan_in_guild
+from db.query.transactions import update_transaction
 from util.encrypt import generate_state
+from util.enum import TransactionType, AuditRecordType
 from util.time import get_current_time
-from util.enum import ENUM_ADMIN_REGISTRATION
 
 CHECKS = EcumeneCheck()
 
@@ -46,7 +46,6 @@ class Admin(commands.Cog):
     )
     @commands.check(CHECKS.user_has_privilege)
     async def register(self, ctx: discord.ApplicationContext, clan: str, role: discord.Role):
-        self.log.info('Command "/admin register" was invoked')
 
         # Defer response until processing is done.
         await ctx.defer(ephemeral=True)
@@ -56,7 +55,7 @@ class Admin(commands.Cog):
 
         # Capture message information and generate a state.
         state = generate_state()
-        purpose = ENUM_ADMIN_REGISTRATION
+        purpose = TransactionType.ADMIN.value
         data = {
             'state': state,
             'guild_id': str(ctx.guild.id),
@@ -109,6 +108,7 @@ class Admin(commands.Cog):
 
         # Close out context.
         await ctx.respond("Privilege escalation has begun. Enact impulse.")
+        await routine_after(ctx, AuditRecordType.SUCCESS)
 
     @admin.command(
         name='deregister',
@@ -119,7 +119,6 @@ class Admin(commands.Cog):
     )
     @commands.check(CHECKS.user_has_privilege)
     async def deregister(self, ctx: discord.ApplicationContext, clan: str):
-        self.log.info('Command "/admin deregister" was invoked')
 
         # Defer response until processing is done.
         await ctx.defer(ephemeral=True)
@@ -143,6 +142,8 @@ class Admin(commands.Cog):
             # The view timed out - not sure how long the interaction lives for.
             # await message.delete()
             await message.edit('Your request has timed out.', view=None)
+            await routine_after(ctx, AuditRecordType.FAILED_TIMEOUT)
+            return
         elif view.value:
             # Confirmed - continue function execution.
             pass
@@ -150,11 +151,13 @@ class Admin(commands.Cog):
             # Cancelled - remove view and respond to user. Exit command.
             # await message.delete()
             await message.edit('Your request has been cancelled.', view=None)
+            await routine_after(ctx, AuditRecordType.CANCELLED)
             return
 
         # Remove the clan entry.
         delete_clan_in_guild(DATABASE, str(ctx.guild.id), clan)
         await message.edit(f'Designated clan **{clan_name}** has been removed.', view=None)
+        await routine_after(ctx, AuditRecordType.SUCCESS)
 
     @admin.command(
         name='list',
@@ -162,7 +165,6 @@ class Admin(commands.Cog):
     )
     @commands.check(CHECKS.user_has_privilege)
     async def clans(self, ctx: discord.ApplicationContext):
-        self.log.info('Command "/admin list" was invoked')
 
         # Defer response until processing is done.
         await ctx.defer(ephemeral=True)
@@ -171,6 +173,7 @@ class Admin(commands.Cog):
         clans = get_all_clans_in_guild(DATABASE, str(ctx.guild.id))
         if not clans:
             await ctx.respond('Ecumene does not manage any clans on this server.')
+            await routine_after(ctx, AuditRecordType.FAILED_CONTEXT)
             return
 
         # Structure details so we can loop numerically by identifier.
@@ -192,11 +195,16 @@ class Admin(commands.Cog):
         # Respond to request.
         list_separator = "\n • "
         await ctx.respond(f"Clans managed by Ecumene: {list_separator}{list_separator.join(clan_display)}")
+        await routine_after(ctx, AuditRecordType.SUCCESS)
+
+    @register.before_invoke
+    @deregister.before_invoke
+    @clans.before_invoke
+    async def admin_before(self, ctx: discord.ApplicationContext):
+        await routine_before(ctx, self.log)
 
     @register.error
     @deregister.error
     @clans.error
     async def admin_error(self, ctx: discord.ApplicationContext, error):
-        self.log.info(error)
-        if isinstance(error, CheckFailure):
-            await ctx.respond('Insufficient privileges to perform this action.', ephemeral=True)
+        await routine_error(ctx, self.log, error)

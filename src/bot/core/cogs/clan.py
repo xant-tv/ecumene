@@ -1,19 +1,20 @@
 import discord
 
-from discord import CheckFailure
 from discord.commands import slash_command, SlashCommandGroup
 from discord.ext import commands
 from bnet.client import BungieInterfaceError
 
 from bot.core.checks import EcumeneCheck
-from bot.core.shared import DATABASE, BNET, DICT_OF_ALL_COMMANDS, PLATFORMS, EMOJIS, WEB_RESOURCES
 from bot.core.interactions import EcumeneConfirm, EcumeneConfirmKick
+from bot.core.routines import routine_before, routine_after, routine_error
+from bot.core.shared import DATABASE, BNET, DICT_OF_ALL_GRANTABLE_COMMANDS, PLATFORMS, EMOJIS, WEB_RESOURCES
+from db.query.admins import get_admin_by_id
 from db.query.clans import get_all_clans_in_guild, get_clan_in_guild
 from db.query.members import get_members_matching, get_member_by_id
-from db.query.admins import get_admin_by_id
-from util.local import file_path, delete_file, write_file
-from util.encrypt import generate_local
 from util.data import make_empty_structure, make_structure, append_frames, format_clan_list
+from util.encrypt import generate_local
+from util.enum import AuditRecordType
+from util.local import file_path, delete_file, write_file
 
 CHECKS = EcumeneCheck()
 FILTER_INACTIVE = 'Inactive'
@@ -50,8 +51,7 @@ class Clan(commands.Cog):
         ]
     )
     @commands.check(CHECKS.user_has_privilege)
-    async def list(self, ctx: discord.ApplicationContext, filter: str):
-        self.log.info('Command "/clan list" was invoked')
+    async def members(self, ctx: discord.ApplicationContext, filter: str):
         
         # Defer response until processing is done.
         await ctx.defer()
@@ -60,6 +60,7 @@ class Clan(commands.Cog):
         clans = get_all_clans_in_guild(DATABASE, str(ctx.guild.id))
         if not clans:
             await ctx.respond("There are no clans configured for this guild.")
+            await routine_after(ctx, AuditRecordType.FAILED_CONTEXT)
             return
 
         # Construct member details.
@@ -165,6 +166,7 @@ class Clan(commands.Cog):
         # Delete from local cache.
         await ctx.respond(file=discord.File(fpath))
         delete_file(fpath)
+        await routine_after(ctx, AuditRecordType.SUCCESS)
 
     @clan.command(
         name='kick',
@@ -175,7 +177,6 @@ class Clan(commands.Cog):
     )
     @commands.check(CHECKS.user_has_privilege)
     async def kick(self, ctx: discord.ApplicationContext, user: discord.Member):
-        self.log.info('Command "/clan kick" was invoked')
         
         # Defer response until processing is done.
         # Note the ephemeral deferral is required to hide the message.
@@ -184,12 +185,14 @@ class Clan(commands.Cog):
         # Make sure the user isn't trying to kick themselves.
         if user.id == ctx.author.id:
             await ctx.respond('You are not allowed to kick yourself.')
+            await routine_after(ctx, AuditRecordType.FAILED_CONTEXT)
             return
 
         # Get the member record for this user.
         member = get_member_by_id(DATABASE, 'discord_id', str(user.id))
         if not member:
             await ctx.respond(f"User {user.mention} is not registered with Ecumene.")
+            await routine_after(ctx, AuditRecordType.FAILED_CONTEXT)
             return
 
         # Get information clan from Bungie.net directly.
@@ -198,6 +201,7 @@ class Clan(commands.Cog):
         if not results:
             # If user has no groups then, obviously, they're not in the clan.
             await ctx.respond(f"User {user.mention} is not in any clans.")
+            await routine_after(ctx, AuditRecordType.FAILED_CONTEXT)
             return
 
         # Extract group information.
@@ -229,6 +233,7 @@ class Clan(commands.Cog):
         # This clan isn't managed by the bot in this guild.
         if not to_kick:
             await ctx.respond(f"Clans for user {user.mention} are not managed by Ecumene.")
+            await routine_after(ctx, AuditRecordType.FAILED_CONTEXT)
             return
 
         # Create confirmation menu.
@@ -241,6 +246,8 @@ class Clan(commands.Cog):
             # The view timed out - not sure how long the interaction lives for.
             # await message.delete()
             await message.edit('Your request has timed out.', view=None)
+            await routine_after(ctx, AuditRecordType.FAILED_TIMEOUT)
+            return
         elif view.value:
             # Confirmed - continue function execution.
             pass
@@ -248,6 +255,7 @@ class Clan(commands.Cog):
             # Cancelled - remove view and respond to user. Exit command.
             # await message.delete()
             await message.edit('Your request has been cancelled.', view=None)
+            await routine_after(ctx, AuditRecordType.CANCELLED)
             return
 
         # Now actually kick user from managed clans assuming the appropriate admin.
@@ -275,10 +283,12 @@ class Clan(commands.Cog):
 
         if not kicked:
             await message.edit(f"Unable to kick {user.mention}. Check clan admin configuration.", view=None)
+            await routine_after(ctx, AuditRecordType.FAILED_ERROR)
             return
 
         # Format success message and send.
         await message.edit(f"Kicked {user.mention} from {', '.join(kicked)}.", view=None)
+        await routine_after(ctx, AuditRecordType.SUCCESS)
 
     @clan.command(
         name='rank',
@@ -290,7 +300,6 @@ class Clan(commands.Cog):
     )
     @commands.check(CHECKS.user_has_privilege)
     async def rank(self, ctx: discord.ApplicationContext, user: discord.Member, rank: str):
-        self.log.info('Command "/clan rank" was invoked')
 
         # Defer response until processing is done.
         # Note the ephemeral deferral is required to hide the message.
@@ -300,6 +309,7 @@ class Clan(commands.Cog):
         rank_value = None
         if not rank:
             await ctx.respond("This shouldn't have happened. Something went wrong.")
+            await routine_after(ctx, AuditRecordType.FAILED_ERROR)
             return
         elif rank == 'Beginner':
             rank_value = BNET.enum.mlevels.beginner
@@ -309,12 +319,14 @@ class Clan(commands.Cog):
             rank_value = BNET.enum.mlevels.admin
         else:
             await ctx.respond("This shouldn't have happened. Something went wrong.")
+            await routine_after(ctx, AuditRecordType.FAILED_ERROR)
             return
 
         # Get the member record for this user.
         member = get_member_by_id(DATABASE, 'discord_id', str(user.id))
         if not member:
             await ctx.respond(f"User {user.mention} is not registered with Ecumene.")
+            await routine_after(ctx, AuditRecordType.FAILED_CONTEXT)
             return
 
         # Get information clan from Bungie.net directly.
@@ -323,6 +335,7 @@ class Clan(commands.Cog):
         if not results:
             # If user has no groups then, obviously, they're not in the clan.
             await ctx.respond(f"User {user.mention} is not in any clans.")
+            await routine_after(ctx, AuditRecordType.FAILED_CONTEXT)
             return
 
         # Extract group information.
@@ -354,6 +367,7 @@ class Clan(commands.Cog):
         # This clan isn't managed by the bot in this guild.
         if not to_set:
             await ctx.respond(f"Clans for user {user.mention} are not managed by Ecumene.")
+            await routine_after(ctx, AuditRecordType.SUCCESS)
             return
 
         # Create confirmation menu.
@@ -366,6 +380,8 @@ class Clan(commands.Cog):
             # The view timed out - not sure how long the interaction lives for.
             # await message.delete()
             await message.edit('Your request has timed out.', view=None)
+            await routine_after(ctx, AuditRecordType.FAILED_TIMEOUT)
+            return
         elif view.value:
             # Confirmed - continue function execution.
             pass
@@ -373,6 +389,7 @@ class Clan(commands.Cog):
             # Cancelled - remove view and respond to user. Exit command.
             # await message.delete()
             await message.edit('Your request has been cancelled.', view=None)
+            await routine_after(ctx, AuditRecordType.CANCELLED)
             return
 
         # Now actually kick user from managed clans assuming the appropriate admin.
@@ -401,10 +418,12 @@ class Clan(commands.Cog):
 
         if not was_set:
             await message.edit(f"Unable to set rank for {user.mention}. Check clan admin configuration.", view=None)
+            await routine_after(ctx, AuditRecordType.FAILED_ERROR)
             return
 
         # Format success message and send.
         await message.edit(f"Set {user.mention} to **{rank}** in {', '.join(was_set)}.", view=None)
+        await routine_after(ctx, AuditRecordType.SUCCESS)
 
     @clan.command(
         name='status',
@@ -415,7 +434,6 @@ class Clan(commands.Cog):
     )
     @commands.check(CHECKS.user_has_privilege)
     async def status(self, ctx: discord.ApplicationContext, clan: discord.Role):
-        self.log.info('Command "/clan status" was invoked')
 
         # Defer response until processing is done.
         await ctx.defer(ephemeral=True)
@@ -425,6 +443,7 @@ class Clan(commands.Cog):
         group = get_clan_in_guild(DATABASE, str(ctx.guild.id), 'role_id', str(clan.id))
         if not group:
             await ctx.respond(f"There is no clan associated with {clan.mention}.")
+            await routine_after(ctx, AuditRecordType.FAILED_CONTEXT)
             return
         group_id = group.get('clan_id')[0]
         group_name = group.get('clan_name')[0]
@@ -440,6 +459,7 @@ class Clan(commands.Cog):
         except BungieInterfaceError:
             # Data retrieval failed. Throw a simple error.
             await ctx.respond(f"Failed to obtain information for {clan.mention}.")
+            await routine_after(ctx, AuditRecordType.FAILED_ERROR)
             return
 
         # Parse invites for information.
@@ -456,13 +476,13 @@ class Clan(commands.Cog):
 
         pends = list()
         for pendee in pending:
-            user = invitee.get('destinyUserInfo')
+            user = pendee.get('destinyUserInfo')
             name = user.get('bungieGlobalDisplayName')
             code = str(user.get('bungieGlobalDisplayNameCode')).zfill(4)
             display = f'{name}#{code}'
             mid = user.get('membershipId')
             mtype = user.get('membershipType')
-            date_created = invitee.get('creationDate')
+            date_created = pendee.get('creationDate')
             pends.append(f"{display} ({mid}) {getattr(EMOJIS, PLATFORMS.get(mtype))}")
         
         invite_str = 'There are no active invites.'
@@ -498,6 +518,7 @@ class Clan(commands.Cog):
 
         # Format success message and send.
         await ctx.respond(embed=embed)
+        await routine_after(ctx, AuditRecordType.SUCCESS)
 
     @clan.command(
         name='invite',
@@ -510,7 +531,6 @@ class Clan(commands.Cog):
     )
     @commands.check(CHECKS.user_has_privilege)
     async def invite(self, ctx: discord.ApplicationContext, method: str, user: discord.Member, clan: discord.Role):
-        self.log.info('Command "/clan invite" was invoked')
 
         # Defer response until processing is done.
         await ctx.defer(ephemeral=True)
@@ -520,6 +540,7 @@ class Clan(commands.Cog):
         group = get_clan_in_guild(DATABASE, str(ctx.guild.id), 'role_id', str(clan.id))
         if not group:
             await ctx.respond(f"There is no clan associated with {clan.mention}.")
+            await routine_after(ctx, AuditRecordType.FAILED_CONTEXT)
             return
         group_id = group.get('clan_id')[0]
 
@@ -527,6 +548,7 @@ class Clan(commands.Cog):
         member = get_member_by_id(DATABASE, 'discord_id', str(user.id))
         if not member:
             await ctx.respond(f"User {user.mention} is not registered with Ecumene.")
+            await routine_after(ctx, AuditRecordType.FAILED_CONTEXT)
             return
 
         # TODO: Needs a retry block in case of background token refresh causing a race condition. 
@@ -547,10 +569,12 @@ class Clan(commands.Cog):
             except BungieInterfaceError:
                 # Sending invite failed. Close out nicely.
                 await ctx.respond(f"Could not send {user.mention} a request to join {clan.mention}. The clan might be full.")
+                await routine_after(ctx, AuditRecordType.FAILED_ERROR)
                 return
             
             # Format success message and send.
             await ctx.respond(f"Sent {user.mention} an invite to {clan.mention}.")
+            await routine_after(ctx, AuditRecordType.SUCCESS)
             return
 
         elif method == 'Cancel':
@@ -564,14 +588,17 @@ class Clan(commands.Cog):
             except BungieInterfaceError:
                 # Cancellation failed. Throw a simple error.
                 await ctx.respond(f"Failed to cancel invite to {clan.mention} for {user.mention}. Are you sure this invite exists?")
+                await routine_after(ctx, AuditRecordType.FAILED_ERROR)
                 return
 
             # Format success message and send.
             await ctx.respond(f"Cancelled invite to {clan.mention} for {user.mention}.")
+            await routine_after(ctx, AuditRecordType.SUCCESS)
             return
         
         # Catch-all case if somehow the chosen method wasn't implemented.
         await ctx.respond("This shouldn't have happened. Something went wrong.")
+        await routine_after(ctx, AuditRecordType.FAILED_CONTEXT)
         return
 
     @clan.command(
@@ -585,7 +612,6 @@ class Clan(commands.Cog):
     )
     @commands.check(CHECKS.user_has_privilege)
     async def request(self, ctx: discord.ApplicationContext, method: str, user: discord.Member, clan: discord.Role):
-        self.log.info('Command "/clan request" was invoked')
         
         # Defer response until processing is done.
         await ctx.defer(ephemeral=True)
@@ -595,6 +621,7 @@ class Clan(commands.Cog):
         group = get_clan_in_guild(DATABASE, str(ctx.guild.id), 'role_id', str(clan.id))
         if not group:
             await ctx.respond(f"There is no clan associated with {clan.mention}.")
+            await routine_after(ctx, AuditRecordType.FAILED_CONTEXT)
             return
         group_id = group.get('clan_id')[0]
 
@@ -602,6 +629,7 @@ class Clan(commands.Cog):
         member = get_member_by_id(DATABASE, 'discord_id', str(user.id))
         if not member:
             await ctx.respond(f"User {user.mention} is not registered with Ecumene.")
+            await routine_after(ctx, AuditRecordType.FAILED_CONTEXT)
             return
 
         # TODO: Needs a retry block in case of background token refresh causing a race condition. 
@@ -622,10 +650,12 @@ class Clan(commands.Cog):
             except BungieInterfaceError:
                 # Acceptance failed. Close out nicely.
                 await ctx.respond(f"Could not accept {user.mention} into {clan.mention}. Is this user still a pending member?")
+                await routine_after(ctx, AuditRecordType.FAILED_ERROR)
                 return
             
             # Format success message and send.
             await ctx.respond(f"Accepted {user.mention} into {clan.mention}.")
+            await routine_after(ctx, AuditRecordType.SUCCESS)
             return
 
         elif method == 'Deny':
@@ -639,14 +669,17 @@ class Clan(commands.Cog):
             except BungieInterfaceError:
                 # Denial failed. Throw a simple error.
                 await ctx.respond(f"Failed to deny request to join {clan.mention} from {user.mention}. Is this user still a pending member?")
+                await routine_after(ctx, AuditRecordType.FAILED_ERROR)
                 return
 
             # Format success message and send.
             await ctx.respond(f"Denied request to join {clan.mention} from {user.mention}.")
+            await routine_after(ctx, AuditRecordType.SUCCESS)
             return
         
         # Catch-all case if somehow the chosen method wasn't implemented.
         await ctx.respond("This shouldn't have happened. Something went wrong.")
+        await routine_after(ctx, AuditRecordType.FAILED_ERROR)
         return
 
     @clan.command(
@@ -660,7 +693,6 @@ class Clan(commands.Cog):
     )
     @commands.check(CHECKS.user_has_privilege)
     async def action(self, ctx: discord.ApplicationContext, method: str, user: str, clan: discord.Role):
-        self.log.info('Command "/clan action" was invoked')
 
         # Defer response until processing is done.
         # Note the ephemeral deferral is required to hide the message.
@@ -671,12 +703,14 @@ class Clan(commands.Cog):
             user_name, user_code = user.split('#')
         except Exception:
             await ctx.respond("Please provide full Bungie display name of the user.")
+            await routine_after(ctx, AuditRecordType.FAILED_CONTEXT)
             return
         
         # Now we need to find all users potentially matching this combination.
         players = BNET.find_destiny_player(user_name, user_code)
         if not players:
             await ctx.respond(f"No player matching the name **{user}** was found.")
+            await routine_after(ctx, AuditRecordType.FAILED_CONTEXT)
             return
 
         # If a group is provided, we want to get some basic information about it.
@@ -686,6 +720,7 @@ class Clan(commands.Cog):
             group = get_clan_in_guild(DATABASE, str(ctx.guild.id), 'role_id', str(clan.id))
             if not group:
                 await ctx.respond(f"There is no clan associated with {clan.mention}.")
+                await routine_after(ctx, AuditRecordType.FAILED_CONTEXT)
                 return
 
         # Perform the appropriate action.
@@ -711,6 +746,7 @@ class Clan(commands.Cog):
             # If no results have been returned then, obviously, they're not in the clan.
             if not all_results:
                 await ctx.respond(f"User **{user}** is not in any clans.")
+                await routine_after(ctx, AuditRecordType.FAILED_CONTEXT)
                 return
 
             # Extract group information.
@@ -744,6 +780,7 @@ class Clan(commands.Cog):
             # This clan isn't managed by the bot in this guild.
             if not to_kick:
                 await ctx.respond(f"Clans for user **{user}** are not managed by Ecumene.")
+                await routine_after(ctx, AuditRecordType.FAILED_CONTEXT)
                 return
 
             # Create confirmation menu.
@@ -756,6 +793,8 @@ class Clan(commands.Cog):
                 # The view timed out - not sure how long the interaction lives for.
                 # await message.delete()
                 await message.edit('Your request has timed out.', view=None)
+                await routine_after(ctx, AuditRecordType.FAILED_TIMEOUT)
+                return
             elif view.value:
                 # Confirmed - continue function execution.
                 pass
@@ -763,6 +802,7 @@ class Clan(commands.Cog):
                 # Cancelled - remove view and respond to user. Exit command.
                 # await message.delete()
                 await message.edit('Your request has been cancelled.', view=None)
+                await routine_after(ctx, AuditRecordType.CANCELLED)
                 return
 
             # Now actually kick user from managed clans assuming the appropriate admin.
@@ -790,14 +830,17 @@ class Clan(commands.Cog):
 
             if not kicked:
                 await message.edit(f"Unable to kick **{user}**. Check clan admin configuration.", view=None)
+                await routine_after(ctx, AuditRecordType.FAILED_ERROR)
                 return
             
             # Format success message and send.
             await message.edit(f"Kicked **{user}** from {', '.join(kicked)}.", view=None)
+            await routine_after(ctx, AuditRecordType.SUCCESS)
             return
         
         elif method == 'Send Invite':
             await ctx.respond("This isn't implemented yet. Try again later.")
+            await routine_after(ctx, AuditRecordType.FAILED_ERROR)
             return
 
         # To cancel invites, we need some clan information.
@@ -806,6 +849,7 @@ class Clan(commands.Cog):
             # If no clan is provided, we need to exit out.
             if not clan:
                 await ctx.respond('This method requires a clan input.')
+                await routine_after(ctx, AuditRecordType.FAILED_CONTEXT)
                 return
 
             # Get some group information from the initial return.        
@@ -821,6 +865,7 @@ class Clan(commands.Cog):
             except BungieInterfaceError:
                 # Data retrieval failed. Throw a simple error.
                 await ctx.respond(f"Failed to obtain information for {clan.mention}.")
+                await routine_after(ctx, AuditRecordType.FAILED_CONTEXT)
                 return
 
             # Create a mapping for existing invites.
@@ -837,6 +882,7 @@ class Clan(commands.Cog):
             # Find the equivalent invite tuple through name and code.
             if user not in invite_map.keys():
                 await ctx.respond(f"Failed to cancel invite to {clan.mention} for **{user}**. Are you sure this invite exists?")
+                await routine_after(ctx, AuditRecordType.FAILED_CONTEXT)
                 return
 
             # Attempt to cancel invite.
@@ -851,22 +897,27 @@ class Clan(commands.Cog):
             except BungieInterfaceError:
                 # Data retrieval failed. Throw a simple error.
                 await ctx.respond(f"Failed to cancel invite to {clan.mention} for **{user}**. Are you sure this invite exists?")
+                await routine_after(ctx, AuditRecordType.FAILED_ERROR)
                 return
 
             # Format success message and send.
             await ctx.respond(f"Cancelled invite to {clan.mention} for **{user}**.")
+            await routine_after(ctx, AuditRecordType.SUCCESS)
             return
 
         elif method == 'Approve Request':
             await ctx.respond("This isn't implemented yet. Try again later.")
+            await routine_after(ctx, AuditRecordType.FAILED_ERROR)
             return
 
         elif method == 'Deny Request':
             await ctx.respond("This isn't implemented yet. Try again later.")
+            await routine_after(ctx, AuditRecordType.FAILED_ERROR)
             return
 
         # Catch-all case if somehow the chosen method wasn't implemented.
         await ctx.respond("This shouldn't have happened. Something went wrong.")
+        await routine_after(ctx, AuditRecordType.FAILED_ERROR)
         return
 
     # Note additional checks for this command.
@@ -880,7 +931,6 @@ class Clan(commands.Cog):
     @commands.check(CHECKS.user_is_not_blacklisted)
     @commands.check(CHECKS.user_has_privilege)
     async def join(self, ctx: discord.ApplicationContext, clan: discord.Role):
-        self.log.info('Command "/clan join" was invoked')
         
         # Defer response until processing is done.
         await ctx.defer(ephemeral=True)
@@ -889,6 +939,7 @@ class Clan(commands.Cog):
         member = get_member_by_id(DATABASE, 'discord_id', str(ctx.author.id))
         if not member:
             await ctx.respond(f"You are not registered with Ecumene. Please register to gain access to this service.")
+            await routine_after(ctx, AuditRecordType.FAILED_CONTEXT)
             return
 
         # Identify the clan based on the role mentioned.
@@ -896,6 +947,7 @@ class Clan(commands.Cog):
         group = get_clan_in_guild(DATABASE, str(ctx.guild.id), 'role_id', str(clan.id))
         if not group:
             await ctx.respond(f"There is no clan associated with {clan.mention}.")
+            await routine_after(ctx, AuditRecordType.FAILED_CONTEXT)
             return
         group_id = group.get('clan_id')[0]
         group_name = group.get('clan_name')[0]
@@ -916,12 +968,25 @@ class Clan(commands.Cog):
         except BungieInterfaceError:
             # Sending invite failed - close out nicely.
             await ctx.respond(f"Could not send a request to join {clan.mention}. The clan might be full. Contact your nearest admin.")
+            await routine_after(ctx, AuditRecordType.FAILED_ERROR)
             return
 
         # Format success message and send.
         await ctx.respond(f"Invite to join **{group_name}#{group_id}** has been sent.")
+        await routine_after(ctx, AuditRecordType.SUCCESS)
 
-    @list.error
+    @members.before_invoke
+    @kick.before_invoke
+    @rank.before_invoke
+    @status.before_invoke
+    @invite.before_invoke
+    @request.before_invoke
+    @action.before_invoke
+    @join.before_invoke
+    async def clan_before(self, ctx: discord.ApplicationContext):
+        await routine_before(ctx, self.log)
+
+    @members.error
     @kick.error
     @rank.error
     @status.error
@@ -930,6 +995,4 @@ class Clan(commands.Cog):
     @action.error
     @join.error
     async def clan_error(self, ctx: discord.ApplicationContext, error):
-        self.log.info(error)
-        if isinstance(error, CheckFailure):
-            await ctx.respond('Insufficient privileges to perform this action.', ephemeral=True)
+        await routine_error(ctx, self.log, error)

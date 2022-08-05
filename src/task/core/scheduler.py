@@ -5,6 +5,7 @@ import logging
 from bnet.client import BungieInterface, BungieInterfaceError
 from db.client import DatabaseService
 from db.query.admins import insert_or_update_admin, get_tokens_to_refresh, get_orphans, delete_orphans, get_dead
+from db.query.audit import get_expired_records, clean_expired_records
 from util.time import get_current_time
 
 TOP_PRIORITY = 1
@@ -15,7 +16,9 @@ NO_PRIORITY = 4
 TOKEN_REFRESH_SCHEDULE = 15*60
 TOKEN_REFRESH_URGENT_SCHEDULE = 5*60
 CLEAN_ADMIN_SCHEDULE = 24*60*60
+CLEAN_AUDIT_SCHEDULE = 24*60*60
 
+AUDIT_TIMEOUT_BUFFER = 15*60
 TOKEN_PROCESSING_BUFFER = 5*60
 
 class EcumeneScheduler():
@@ -36,6 +39,7 @@ class EcumeneScheduler():
         # Run tasks on-demand to begin scheduling.
         self.clean_admin_cache()
         self.refresh_tokens()
+        self.time_out_pending_audit()
 
     # This task must be run every fifteen minutes!
     def refresh_tokens(self, delay=TOKEN_REFRESH_SCHEDULE):
@@ -125,4 +129,29 @@ class EcumeneScheduler():
             delay, 
             LOW_PRIORITY, 
             self.clean_admin_cache
+        )
+
+    def time_out_pending_audit(self, delay=CLEAN_AUDIT_SCHEDULE):
+        """Clean up any audit records that have clearly timed out."""
+        self.log.info('Running "time_out_pending_audit" scheduled task...')
+
+        # Put this whole thing into a try-except block to avoid scheduler death.
+        try:
+
+            # Get expired audit records.
+            expired = get_expired_records(self.db, AUDIT_TIMEOUT_BUFFER)
+            if expired:
+                self.log.info(f"Found {len(expired.get('record_id'))} expired audit record(s)")
+                clean_expired_records(self.db, AUDIT_TIMEOUT_BUFFER)
+
+        # If something goes wrong, log and reschedule again.
+        except Exception as e:
+            self.log.error(e)
+
+        # Ensure this task is rescheduled to run again.
+        # Set this with almost no priority. It's not critical _at all_ for functionality.
+        self.schedule.enter(
+            delay,
+            NO_PRIORITY,
+            self.time_out_pending_audit
         )

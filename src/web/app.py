@@ -3,7 +3,7 @@ import logging
 from flask import request, render_template, redirect, url_for
 
 from web.core.client import EcumeneWeb
-from util.enum import ENUM_USER_REGISTRATION, ENUM_ADMIN_REGISTRATION, ENUM_REGISTRATION
+from util.enum import TransactionType
 
 # Create instance of Ecumene and attach functions.
 ecumene = EcumeneWeb()
@@ -60,11 +60,11 @@ def login():
         purpose, display = ecumene.routes.capture_login(request)
         if not purpose:
             return redirect(url_for('index'))
-        elif purpose not in ENUM_REGISTRATION:
+        elif not TransactionType.has_value(purpose):
             raise NotImplementedError(f'Transaction purpose "{purpose}" not implemented.')
-        elif purpose == ENUM_USER_REGISTRATION:
+        elif purpose == TransactionType.USER:
             return redirect(url_for('success', displayName=display))
-        elif purpose == ENUM_ADMIN_REGISTRATION:
+        elif purpose == TransactionType.ADMIN:
             return redirect(url_for('admin', displayName=display))
         else:
             raise ValueError('Transaction did not specify purpose.')

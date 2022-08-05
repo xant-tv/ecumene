@@ -4,7 +4,7 @@ import discord
 
 from db.query.members import check_blacklist
 from db.query.permissions import get_permitted_roles_bulk
-from bot.core.shared import DATABASE, BNET, DICT_OF_ALL_COMMANDS
+from bot.core.shared import DATABASE, BNET, DICT_OF_ALL_GRANTABLE_COMMANDS
 
 def get_command_name(cmd, default=''):
     """Extracts command name."""

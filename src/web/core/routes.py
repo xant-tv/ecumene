@@ -11,7 +11,7 @@ from db.query.members import insert_or_update_member
 from db.query.admins import insert_or_update_admin
 from db.query.clans import insert_or_update_clan
 from util.time import get_current_time, bnet_to_time, epoch_to_time
-from util.enum import ENUM_USER_REGISTRATION, ENUM_ADMIN_REGISTRATION, ENUM_REGISTRATION
+from util.enum import TransactionType
 
 class EcumeneRouteHandler():
 
@@ -46,11 +46,11 @@ class EcumeneRouteHandler():
 
         # Split functionality depending on purpose enumeration.
         purpose = result.get('purpose')[0]
-        if purpose not in ENUM_REGISTRATION:
+        if not TransactionType.has_value(purpose):
             raise NotImplementedError(f'Transaction purpose "{purpose}" not implemented.')
-        elif purpose == ENUM_USER_REGISTRATION:
+        elif purpose == TransactionType.USER:
             return self.capture_login_user(request, result)
-        elif purpose == ENUM_ADMIN_REGISTRATION:
+        elif purpose == TransactionType.ADMIN:
             return self.capture_login_admin(request, result)
         raise ValueError('Transaction did not specify purpose.')
 

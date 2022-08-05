@@ -42,3 +42,34 @@ def format_clan_list(df: pd.DataFrame):
     # Sorting magic.
     df['bnet_id_num'] = pd.to_numeric(df['bnet_id'], errors='coerce')
     df.sort_values(by=['clan_id', 'bnet_id_num'], inplace=True)
+
+# Processing functionality.
+def format_audit_records(df: pd.DataFrame):
+    """Apply preprocess and format to audit records structure."""
+
+    # Convert epoch timestamp into a datetime object.
+    # Create a readable string for humans, too.
+    df['invoked_at_dt'] = pd.to_datetime(df['invoked_at'], unit='ms')
+    df['invoked_at_str'] = df['invoked_at_dt'].dt.strftime('%Y-%m-%d %H:%M:%S')
+
+    # Compute last online as a relative time from current.
+    df['invoked_at_rel'] = pd.to_datetime(get_current_time(), unit='ms') - df['invoked_at_dt']
+    df['invoked_at_rel_str'] = df['invoked_at_rel'].apply(humanize_timedelta)
+
+    # Sorting magic.
+    df['record_id_num'] = pd.to_numeric(df['record_id'], errors='coerce')
+    df.sort_values(by=['invoked_at'], inplace=True)
+      
+    # Final output columns for the "pretty" output.
+    output_cols = [
+        'record_id',
+        'command_id',
+        'invoked_at_str', # Created by format_audit_records processing.
+        'invoked_at_rel_str',
+        'guild_id',
+        'discord_id',
+        'command_options',
+        'status'
+    ]
+    output = df.loc[:, output_cols]
+    return output

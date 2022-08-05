@@ -8,8 +8,19 @@ from bnet.client import BungieInterface
 DATABASE = DatabaseService()
 BNET = BungieInterface()
 
+# All command groups map
+DICT_OF_ALL_COMMAND_GROUPS = {
+    '/register': 'register',
+    '/profile': 'profile',
+    '/inspect': 'inspect',
+    '/admin': 'admin.%',
+    '/audit': 'audit.%',
+    '/clan': 'clan.%',
+    '/guild': 'guild.%',
+}
+
 # All grantable commands map.
-DICT_OF_ALL_COMMANDS = {
+DICT_OF_ALL_GRANTABLE_COMMANDS = {
     '/clan': 'clan.*',
     '/clan list': 'clan.list',
     '/clan kick': 'clan.kick',
@@ -20,8 +31,8 @@ DICT_OF_ALL_COMMANDS = {
     '/clan invite': 'clan.invite',
     '/clan request': 'clan.request'
 }
-DICT_OF_ALL_PERMISSIONS = {
-    i: c for c, i in DICT_OF_ALL_COMMANDS.items() # Inverse dictionary of above.
+DICT_OF_ALL_GRANTABLE_PERMISSIONS = {
+    i: c for c, i in DICT_OF_ALL_GRANTABLE_COMMANDS.items() # Inverse dictionary of above.
 }
 
 # Emoji information we want the bot to use.
