@@ -76,7 +76,8 @@ class Clan(commands.Cog):
             }
             records_map = {
                 'discord_id': list(),
-                'discord_name': list()
+                'discord_name': list(),
+                'discord_role': list()
             }
 
             # Get all members from Bungie for each clan.
@@ -105,25 +106,31 @@ class Clan(commands.Cog):
             struct = make_empty_structure()
             if records:            
                 for user_id in records.get('discord_id'):
+                    user_discord_name = EMPTY
+                    user_discord_role = EMPTY
                     # Capture user name from server.
                     try:
                         # This invokes a call to the Discord API so it can error.
                         user = await ctx.guild.fetch_member(user_id)
                         user_discord_name = f"{user.name}#{user.discriminator}"
+                        roles = user.roles
+                        user_discord_role = roles[-1] # First role is the everyone role. This will be the highest server role.
                     except Exception:
-                        # User is not in guild.
-                        user_discord_name = EMPTY
+                        # User is not in guild or somehow role get fails.
+                        pass
                     records_map['discord_id'].append(user_id)
                     records_map['discord_name'].append(user_discord_name)
+                    records_map['discord_role'].append(user_discord_role)
                 struct = make_structure(records)
-                struct['discord_name'] = struct['discord_id'].map(
-                    dict(
-                        zip(
-                            records_map.get('discord_id'), 
-                            records_map.get('discord_name')
+                for property in ['discord_name', 'discord_role']:
+                    struct[property] = struct['discord_id'].map(
+                        dict(
+                            zip(
+                                records_map.get('discord_id'), 
+                                records_map.get(property)
+                            )
                         )
                     )
-                )
 
             # Structure and append additional details.
             clan_members = details
@@ -149,6 +156,7 @@ class Clan(commands.Cog):
             'discord_id',
             'bungie_name',
             'discord_name',
+            'discord_role',
             'join_date_str',
             'last_online_str', # Created by format_clan_list processing.
             'last_online_rel_str',
