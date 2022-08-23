@@ -6,7 +6,7 @@ import logging
 from urllib.parse import urlencode
 from types import SimpleNamespace
 
-MTYPES = dict(xbox=1, playstation=2, steam=3, blizzard=4, stadia=5, bungie=254)
+MTYPES = dict(xbox=1, playstation=2, steam=3, blizzard=4, stadia=5, epic=6, bungie=254)
 MLEVELS = dict(beginner=1, member=2, admin=3, actingfounder=4, founder=5) # Just like with Halo - Bungie never made a 4th.
 
 class BungieEnumerations():

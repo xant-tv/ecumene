@@ -45,6 +45,7 @@ EMOJIS = SimpleNamespace(**{
     'xbox': '<:xbox:977585872344072192>',
     'stadia': '<:stadia:977585850542071818>',
     'blizzard': '<:blizzard:977587177225596999>',
+    'epic': '<:epic:1011687917044908134>',
     'discord': '<:discord:977592420940284006>',
     'nitro': '<:nitro:977599227960115230>',
     'owner': '<:owner:977599814080532610>',
@@ -57,7 +58,8 @@ PLATFORMS = {
     2: 'playstation',
     3: 'steam',
     4: 'blizzard',
-    5: 'stadia'
+    5: 'stadia',
+    6: 'epic'
 }
 
 # This reverses the Bungie namespace lookup for member levels.
