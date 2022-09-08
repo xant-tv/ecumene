@@ -10,8 +10,8 @@ from bot.core.routines import routine_before, routine_after, routine_error
 from bot.core.shared import DATABASE, BNET, DICT_OF_ALL_GRANTABLE_COMMANDS, PLATFORMS, EMOJIS, WEB_RESOURCES
 from db.query.admins import get_admin_by_id
 from db.query.clans import get_all_clans_in_guild, get_clan_in_guild
-from db.query.members import get_members_matching, get_member_by_id
-from util.data import make_empty_structure, make_structure, append_frames, format_clan_list
+from db.query.members import get_members_matching_by_all_ids, get_member_by_id
+from util.data import make_empty_structure, make_structure, append_frames, create_merge_id, coalesce_shared_ids, format_clan_list
 from util.encrypt import generate_local
 from util.enum import AuditRecordType
 from util.local import file_path, delete_file, write_file
@@ -70,6 +70,7 @@ class Clan(commands.Cog):
             # Describe how returns will be handled.
             detail_map = {
                 'bnet_id': list(),
+                'destiny_id': list(),
                 'bungie_name': list(),
                 'join_date': list(),
                 'last_online': list()
@@ -86,7 +87,7 @@ class Clan(commands.Cog):
                 # Capture identifier and last online activity.
                 # The user's global display information may only be contained in one key! (Why Bungie?!)
                 # It's also possible for the user to not have a Bungie.net login!
-                bnet_info = member.get('bungieNetUserInfo') or dict()
+                bnet_info = member.get('bungieNetUserInfo', dict())
                 destiny_info = member.get('destinyUserInfo')
                 display_name = bnet_info.get('bungieGlobalDisplayName') or destiny_info.get('bungieGlobalDisplayName')
                 display_code = bnet_info.get('bungieGlobalDisplayNameCode') or destiny_info.get('bungieGlobalDisplayNameCode')
@@ -96,13 +97,15 @@ class Clan(commands.Cog):
                 if display_name and display_code:
                     bungie_name = f"{display_name}#{str(display_code).zfill(4)}"
                 detail_map['bnet_id'].append(str(bnet_info.get('membershipId', EMPTY)))
+                detail_map['destiny_id'].append(str(destiny_info.get('membershipId', EMPTY)))
                 detail_map['bungie_name'].append(bungie_name)
                 detail_map['join_date'].append(join_date)
                 detail_map['last_online'].append(member.get('lastOnlineStatusChange'))
             details = make_structure(detail_map)
+            create_merge_id(details)
 
             # Extract database member information.
-            records = get_members_matching(DATABASE, 'bnet_id', details['bnet_id'].dropna().to_list())
+            records = get_members_matching_by_all_ids(DATABASE, details['bnet_id'].dropna().to_list(), details['destiny_id'].dropna().to_list())
             struct = make_empty_structure()
             if records:            
                 for user_id in records.get('discord_id'):
@@ -111,6 +114,7 @@ class Clan(commands.Cog):
                     # Capture user name from server.
                     try:
                         # This invokes a call to the Discord API so it can error.
+                        # It also causes significant slowdown of this function.
                         user = await ctx.guild.fetch_member(user_id)
                         user_discord_name = f"{user.name}#{user.discriminator}"
                         roles = user.roles
@@ -122,6 +126,7 @@ class Clan(commands.Cog):
                     records_map['discord_name'].append(user_discord_name)
                     records_map['discord_role'].append(user_discord_role)
                 struct = make_structure(records)
+                create_merge_id(struct)
                 for property in ['discord_name', 'discord_role']:
                     struct[property] = struct['discord_id'].map(
                         dict(
@@ -135,7 +140,8 @@ class Clan(commands.Cog):
             # Structure and append additional details.
             clan_members = details
             if not struct.empty:
-                clan_members = clan_members.merge(struct, how='outer', on=['bnet_id'])
+                clan_members = clan_members.merge(struct, how='outer', on=['merge_id'], suffixes=['_api', '_db'])
+            coalesce_shared_ids(clan_members)
             clan_members['clan_id'] = clan_id
             clan_members['clan_name'] = clan_name
             members = append_frames(members, clan_members)

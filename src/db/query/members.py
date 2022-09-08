@@ -1,4 +1,4 @@
-from sqlalchemy import select, update, delete
+from sqlalchemy import select, update, delete, or_
 
 from db.client import DatabaseService
 
@@ -69,6 +69,20 @@ def get_members_matching(service: DatabaseService, target_column, member_ids):
     qry = (
         select(table).
             where(getattr(table.c, target_column).in_(member_ids))
+    )
+    result = service.select(qry)
+    return result
+
+def get_members_matching_by_all_ids(service: DatabaseService, bnet_ids, destiny_ids):
+    table = service.retrieve_model('members')
+    qry = (
+        select(table).
+            where(
+                or_(
+                    table.c.bnet_id.in_(bnet_ids),
+                    table.c.destiny_id.in_(destiny_ids)
+                )
+            )
     )
     result = service.select(qry)
     return result

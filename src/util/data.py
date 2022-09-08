@@ -19,6 +19,13 @@ def make_structure(data) -> pd.DataFrame:
 def append_frames(*frames) -> pd.DataFrame:
     return pd.concat(frames, axis=0, ignore_index=True)
 
+def create_merge_id(df: pd.DataFrame):
+    df['merge_id'] = np.where(df['bnet_id'].notnull(), df['bnet_id'], df['destiny_id'])
+
+def coalesce_shared_ids(df: pd.DataFrame):
+    df['bnet_id'] = np.where(df['bnet_id_api'].notnull(), df['bnet_id_api'], df['bnet_id_db'])
+    df['destiny_id'] = np.where(df['destiny_id_api'].notnull(), df['destiny_id_api'], df['destiny_id_db'])
+
 # Processing functionality.
 def format_clan_list(df: pd.DataFrame):
     """Apply preprocess and format to clan list structure."""
