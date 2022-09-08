@@ -28,13 +28,13 @@ def coalesce_clan_list(df_api: pd.DataFrame, df_db: pd.DataFrame, empty_str):
     df_api_destiny = df_api.loc[((df_api['bnet_id'].isnull()) | (df_api['bnet_id'] == empty_str)) & (df_api['destiny_id'].notnull()) & (df_api['destiny_id'] != empty_str)]
 
     # Handle merges seperately.
-    # Note that backup identifier merge is an inner to avoid duplication of records.
+    # Note left merges to avoid duplication of records.
     df_bnet = df_api_bnet.merge(df_db, how='left', on=['bnet_id'], suffixes=['_api', '_db'])
     df_destiny = df_api_destiny.merge(df_db, how='left', on=['destiny_id'], suffixes=['_api', '_db'])
 
     # Handle separate merge suffixes, retaining API values where possible.
-    df_bnet['destiny_id'] = np.where(df_bnet['destiny_id_api'].notnull(), df_bnet['destiny_id_api'], df_bnet['destiny_id_db'])
-    df_destiny['bnet_id'] = np.where(df_destiny['bnet_id_api'].notnull(), df_destiny['bnet_id_api'], df_destiny['bnet_id_db'])
+    df_bnet['destiny_id'] = np.where((df_bnet['destiny_id_api'].notnull()) & (df_bnet['destiny_id_api'] != empty_str), df_bnet['destiny_id_api'], df_bnet['destiny_id_db'])
+    df_destiny['bnet_id'] = df_destiny['bnet_id_db'] # We can always replace as the null condition is checked when data is first split.
     df_bnet.drop(columns=['destiny_id_api', 'destiny_id_db'], inplace=True)
     df_destiny.drop(columns=['bnet_id_api', 'bnet_id_db'], inplace=True)
 
