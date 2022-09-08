@@ -11,7 +11,7 @@ from bot.core.shared import DATABASE, BNET, DICT_OF_ALL_GRANTABLE_COMMANDS, PLAT
 from db.query.admins import get_admin_by_id
 from db.query.clans import get_all_clans_in_guild, get_clan_in_guild
 from db.query.members import get_members_matching_by_all_ids, get_member_by_id
-from util.data import make_empty_structure, make_structure, append_frames, create_merge_id, coalesce_shared_ids, format_clan_list
+from util.data import make_empty_structure, make_structure, append_frames, coalesce_shared_ids, format_clan_list
 from util.encrypt import generate_local
 from util.enum import AuditRecordType
 from util.local import file_path, delete_file, write_file
@@ -102,10 +102,13 @@ class Clan(commands.Cog):
                 detail_map['join_date'].append(join_date)
                 detail_map['last_online'].append(member.get('lastOnlineStatusChange'))
             details = make_structure(detail_map)
-            create_merge_id(details)
 
             # Extract database member information.
-            records = get_members_matching_by_all_ids(DATABASE, details['bnet_id'].dropna().to_list(), details['destiny_id'].dropna().to_list())
+            records = get_members_matching_by_all_ids(
+                DATABASE, 
+                details['bnet_id'].dropna().to_list(), 
+                details['destiny_id'].dropna().to_list()
+            )
             struct = make_empty_structure()
             if records:            
                 for user_id in records.get('discord_id'):
@@ -126,7 +129,6 @@ class Clan(commands.Cog):
                     records_map['discord_name'].append(user_discord_name)
                     records_map['discord_role'].append(user_discord_role)
                 struct = make_structure(records)
-                create_merge_id(struct)
                 for property in ['discord_name', 'discord_role']:
                     struct[property] = struct['discord_id'].map(
                         dict(
@@ -140,8 +142,9 @@ class Clan(commands.Cog):
             # Structure and append additional details.
             clan_members = details
             if not struct.empty:
-                clan_members = clan_members.merge(struct, how='outer', on=['merge_id'], suffixes=['_api', '_db'])
-            coalesce_shared_ids(clan_members)
+                clan_members_by_bnet = clan_members.merge(struct, how='outer', on=['bnet_id'], suffixes=['_api', '_db'])
+                clan_members_by_destiny = clan_members.merge(struct, how='outer', on=['destiny_id'], suffixes=['_api', '_db'])
+                clan_members = coalesce_shared_ids(clan_members_by_bnet, clan_members_by_destiny)
             clan_members['clan_id'] = clan_id
             clan_members['clan_name'] = clan_name
             members = append_frames(members, clan_members)

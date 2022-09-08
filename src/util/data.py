@@ -19,12 +19,19 @@ def make_structure(data) -> pd.DataFrame:
 def append_frames(*frames) -> pd.DataFrame:
     return pd.concat(frames, axis=0, ignore_index=True)
 
-def create_merge_id(df: pd.DataFrame):
-    df['merge_id'] = np.where(df['bnet_id'].notnull(), df['bnet_id'], df['destiny_id'])
+def coalesce_shared_ids(df_bnet: pd.DataFrame, df_destiny: pd.DataFrame):
+    """Join all the various data structures to retain."""
 
-def coalesce_shared_ids(df: pd.DataFrame):
-    df['bnet_id'] = np.where(df['bnet_id_api'].notnull(), df['bnet_id_api'], df['bnet_id_db'])
-    df['destiny_id'] = np.where(df['destiny_id_api'].notnull(), df['destiny_id_api'], df['destiny_id_db'])
+    # Handle separate merge suffixes.
+    df_bnet['destiny_id'] = np.where(df_bnet['destiny_id_api'].notnull(), df_bnet['destiny_id_api'], df_bnet['destiny_id_db'])
+    df_destiny['bnet_id'] = np.where(df_destiny['bnet_id_api'].notnull(), df_destiny['bnet_id_api'], df_destiny['bnet_id_db'])
+
+    # Magic merging of things (assumes bungie_name will always be present, which will probably also break at some point).
+    df = pd.concat([df_bnet, df_destiny])
+    df.sort_values(by=['bungie_name', 'bnet_id', 'destiny_id'], inplace=True) # Sorts duplicates where any missing keys are below complete records.
+    df.drop_duplicates(subset=['bungie_name'], inplace=True) # Drops duplicates maintaining the most complete record set.
+
+    return df
 
 # Processing functionality.
 def format_clan_list(df: pd.DataFrame):
