@@ -19,13 +19,13 @@ def make_structure(data) -> pd.DataFrame:
 def append_frames(*frames) -> pd.DataFrame:
     return pd.concat(frames, axis=0, ignore_index=True)
 
-def coalesce_clan_list(df_api: pd.DataFrame, df_db: pd.DataFrame):
+def coalesce_clan_list(df_api: pd.DataFrame, df_db: pd.DataFrame, empty_str):
     """Join all the various data structures to retain."""
 
     # Split out API data depending on which values are available.
     # Priority is to utilise Bungie identifier where present.
-    df_api_bnet = df_api.loc[df_api['bnet_id'].notnull()]
-    df_api_destiny = df_api.loc[(df_api['bnet_id'].isnull()) & (df_api['destiny_id'].notnull())]
+    df_api_bnet = df_api.loc[(df_api['bnet_id'].notnull()) & (df_api['bnet_id'] != empty_str)]
+    df_api_destiny = df_api.loc[((df_api['bnet_id'].isnull()) | (df_api['bnet_id'] == empty_str)) & (df_api['destiny_id'].notnull()) & (df_api['destiny_id'] != empty_str)]
 
     # Handle merges seperately.
     # Note that backup identifier merge is an inner to avoid duplication of records.

@@ -104,10 +104,12 @@ class Clan(commands.Cog):
             details = make_structure(detail_map)
 
             # Extract database member information.
+            search_bnet = details.loc[(details['bnet_id'].notnull()) & (details['bnet_id'] != EMPTY), 'bnet_id'].to_list()
+            search_destiny = details.loc[(details['destiny_id'].notnull()) & (details['destiny_id'] != EMPTY), 'destiny_id'].to_list()
             records = get_members_matching_by_all_ids(
                 DATABASE,
-                details['bnet_id'].dropna().to_list(),
-                details['destiny_id'].dropna().to_list()
+                search_bnet,
+                search_destiny
             )
             struct = make_empty_structure()
             if records:            
@@ -142,7 +144,7 @@ class Clan(commands.Cog):
             # Structure and append additional details.
             clan_members = details
             if not struct.empty:
-                clan_members = coalesce_clan_list(details, struct)
+                clan_members = coalesce_clan_list(details, struct, EMPTY)
             clan_members['clan_id'] = clan_id
             clan_members['clan_name'] = clan_name
             members = append_frames(members, clan_members)
