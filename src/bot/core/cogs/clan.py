@@ -11,7 +11,7 @@ from bot.core.shared import DATABASE, BNET, DICT_OF_ALL_GRANTABLE_COMMANDS, PLAT
 from db.query.admins import get_admin_by_id
 from db.query.clans import get_all_clans_in_guild, get_clan_in_guild
 from db.query.members import get_members_matching_by_all_ids, get_member_by_id
-from util.data import make_empty_structure, make_structure, append_frames, coalesce_shared_ids, format_clan_list
+from util.data import make_empty_structure, make_structure, append_frames, coalesce_clan_list, format_clan_list
 from util.encrypt import generate_local
 from util.enum import AuditRecordType
 from util.local import file_path, delete_file, write_file
@@ -87,7 +87,7 @@ class Clan(commands.Cog):
                 # Capture identifier and last online activity.
                 # The user's global display information may only be contained in one key! (Why Bungie?!)
                 # It's also possible for the user to not have a Bungie.net login!
-                bnet_info = member.get('bungieNetUserInfo', dict())
+                bnet_info = member.get('bungieNetUserInfo') or dict()
                 destiny_info = member.get('destinyUserInfo')
                 display_name = bnet_info.get('bungieGlobalDisplayName') or destiny_info.get('bungieGlobalDisplayName')
                 display_code = bnet_info.get('bungieGlobalDisplayNameCode') or destiny_info.get('bungieGlobalDisplayNameCode')
@@ -105,8 +105,8 @@ class Clan(commands.Cog):
 
             # Extract database member information.
             records = get_members_matching_by_all_ids(
-                DATABASE, 
-                details['bnet_id'].dropna().to_list(), 
+                DATABASE,
+                details['bnet_id'].dropna().to_list(),
                 details['destiny_id'].dropna().to_list()
             )
             struct = make_empty_structure()
@@ -142,9 +142,7 @@ class Clan(commands.Cog):
             # Structure and append additional details.
             clan_members = details
             if not struct.empty:
-                clan_members_by_bnet = clan_members.merge(struct, how='outer', on=['bnet_id'], suffixes=['_api', '_db'])
-                clan_members_by_destiny = clan_members.merge(struct, how='outer', on=['destiny_id'], suffixes=['_api', '_db'])
-                clan_members = coalesce_shared_ids(clan_members_by_bnet, clan_members_by_destiny)
+                clan_members = coalesce_clan_list(details, struct)
             clan_members['clan_id'] = clan_id
             clan_members['clan_name'] = clan_name
             members = append_frames(members, clan_members)

@@ -170,6 +170,11 @@ class Identity(commands.Cog):
             backup_code = bnet_info.get('bungieGlobalDisplayNameCodes')
             profile_info = BNET.find_destiny_player(backup_name, backup_code)
 
+        # Sometimes we are missing Bungie information as well!
+        if not bnet_info:
+            alt_content = BNET.get_linked_profiles(result.get('bnet_mtype')[0], result.get('bnet_id')[0])
+            bnet_info = alt_content.get('bnetMembership')
+
         # Now we need to get clan membership information for all active profiles.
         clans = list()
         for profile in profile_info:
@@ -326,6 +331,9 @@ class Identity(commands.Cog):
         # We need to search for all user profile options.
         linked_profiles = BNET.get_linked_profiles(BNET.enum.mtype.bungie, bungie_id)
         profile_data = linked_profiles.get('profiles')
+        if not profile_data:
+            linked_profiles = BNET.get_linked_profiles(platform_id, membership_id)
+            profile_data = linked_profiles.get('profiles')
         profile_map = dict()
         for profile in profile_data:
             profile_type = profile.get('membershipType')
@@ -338,7 +346,9 @@ class Identity(commands.Cog):
 
         # Extract flags about cross-save and multiple profiles.
         cross_save = False
-        if primary_profile.get('crossSaveOverride'):
+        cross_save_platform = primary_profile.get('crossSaveOverride')
+        mismatch = False
+        if cross_save_platform:
             cross_save = True
         has_multiple = False
         if len(profile_data) > 1:
@@ -353,70 +363,68 @@ class Identity(commands.Cog):
         content_info = "\n\nThis user's primary profile is set to:"
         content_info += f'\n**{display_name}** ({membership_id}:{platform_id}) {getattr(EMOJIS, PLATFORMS.get(platform_id))}'
         if cross_save:
-            content_info += f' {EMOJIS.cross_save}'
-        if has_multiple:
+            if cross_save_platform == platform_id:
+                content_info += f' {EMOJIS.cross_save}'
+            else:
+                mismatch = True
+                content_info += f'\n\n*There is a mismatch between cross-save and selected profiles.*'
+        if has_multiple or mismatch:
             content_info += '\n\nAll available profiles are:'
             for profile_id in sorted(profile_map.keys()):
                 profile_name = profile_map[profile_id].get('displayName')
                 content_info += f'\n**{profile_name}** ({membership_id}:{profile_id}) {getattr(EMOJIS, PLATFORMS.get(profile_id))}'
-        content_footer = '\n\nThis user has no other available profiles.'
-        if cross_save:
-            content_footer = "\n\nOnly the cross save account may be chosen as an active profile."
-        if has_multiple:
-            content_footer ="\n\nUse the dropdown below to select a primary profile."
+                if cross_save_platform == profile_id:
+                    content_info += f' {EMOJIS.cross_save}'
+        else:
+            content_info += '\n\nThere are no other available profiles.'
+        content_footer ="\n\nUse the dropdown below to update primary profile."
 
         # Display current user information.
         content = content_header + content_info + content_footer
-
-        # Provide select options for users who are allowed to change profile.
-        # This is only for the case where there are multiple profiles.
-        if has_multiple:
             
-            # Generate option objects.
-            options = list()
-            for profile_id in sorted(profile_map.keys()):
-                platform = PLATFORMS.get(profile_id)
-                label = platform.capitalize()
-                emoji = getattr(EMOJIS, platform)
-                option = discord.SelectOption(
-                    label=label, emoji=emoji
-                )
-                options.append(option)
-            
-            # Try making an interaction with this.
-            dropdown = EcumenePlatformDropdown(options)
-            view = EcumeneSelectPlatform(dropdown)
+        # Generate option objects.
+        options = list()
+        for profile_id in sorted(profile_map.keys()):
+            platform = PLATFORMS.get(profile_id)
+            label = platform.capitalize()
+            emoji = getattr(EMOJIS, platform)
+            option = discord.SelectOption(
+                label=label, emoji=emoji
+            )
+            options.append(option)
+        
+        # Try making an interaction with this.
+        dropdown = EcumenePlatformDropdown(options)
+        view = EcumeneSelectPlatform(dropdown)
 
-            # Respond with both the embed and the interactive view.
-            message = await ctx.respond(content, view=view)
+        # Respond with both the embed and the interactive view.
+        message = await ctx.respond(content, view=view)
 
-            # Wait for the view to stop listening for input.
-            await view.wait()
-            if view.value is None:
-                # The view timed out - timeout default is 3 minutes.
-                # await message.delete()
-                await message.edit('Your request has timed out.', view=None)
-                await routine_after(ctx, AuditRecordType.FAILED_TIMEOUT)
-                return
-            elif view.value:
-                # Value chosen - continue function execution.
-                pass
-            
-            # Update value in database to reflect current settings.
-            target_mtype = getattr(BNET.enum.mtype, view.value.lower())
-            data = {
-                'discord_id': str(ctx.author.id),
-                'destiny_mtype': target_mtype
-            }
-            update_member_details(DATABASE, 'discord_id', data)
-
-            # Recreate embed with new information.
-            await message.edit(f'Request acknowledged. Primary profile set to **{view.value}**.',  view=None)
-            await routine_after(ctx, AuditRecordType.SUCCESS)
+        # Wait for the view to stop listening for input.
+        await view.wait()
+        if view.value is None:
+            # The view timed out - timeout default is 3 minutes.
+            # await message.delete()
+            await message.edit('Your request has timed out.', view=None)
+            await routine_after(ctx, AuditRecordType.FAILED_TIMEOUT)
             return
+        elif view.value:
+            # Value chosen - continue function execution.
+            pass
+        
+        # Update value in database to reflect current settings.
+        target_mtype = getattr(BNET.enum.mtype, view.value.lower())
+        data = {
+            'discord_id': str(ctx.author.id),
+            'destiny_id': str(profile_map[target_mtype].get('membershipId')),
+            'destiny_mtype': target_mtype
+        }
+        update_member_details(DATABASE, 'discord_id', data)
 
-        await ctx.respond(content)
+        # Recreate embed with new information.
+        await message.edit(f'Request acknowledged. Primary profile set to **{view.value}**.',  view=None)
         await routine_after(ctx, AuditRecordType.SUCCESS)
+        return
 
     @register.before_invoke
     @inspect.before_invoke
