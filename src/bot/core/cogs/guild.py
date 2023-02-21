@@ -5,8 +5,9 @@ from discord.ext import commands
 
 from bot.core.checks import EcumeneCheck, get_lineage_paths
 from bot.core.routines import routine_before, routine_after, routine_error
-from bot.core.shared import DATABASE, DICT_OF_ALL_GRANTABLE_COMMANDS, DICT_OF_ALL_GRANTABLE_PERMISSIONS
+from bot.core.shared import DATABASE, DICT_OF_ALL_GRANTABLE_COMMANDS, DICT_OF_ALL_GRANTABLE_PERMISSIONS, NOTIFICATION_TYPES
 from db.query.members import check_blacklist, add_user_to_blacklist, remove_user_from_blacklist
+from db.query.channels import insert_or_update_channel, select_channel, delete_channel, get_channel_configuration
 from db.query.permissions import \
     select_permission, \
     insert_permission, \
@@ -317,6 +318,110 @@ class Guild(commands.Cog):
         await ctx.respond(f"User {user.mention} removed from server block list.")
         await routine_after(ctx, AuditRecordType.SUCCESS)
 
+    # Set up a notification channel.
+    @guild.command(
+        name='notify',
+        description='Set channel for receiving notification posts.',
+        options=[
+            discord.Option(discord.TextChannel, name='channel', description='Target channel.'),
+            discord.Option(str, name='purpose', description='Type of notifications to receive.', choices=NOTIFICATION_TYPES, required=False)
+        ]
+    )
+    @commands.check(CHECKS.guild_is_not_blacklisted)
+    @commands.check(CHECKS.user_has_privilege)
+    async def notify(self, ctx: discord.ApplicationContext, channel: discord.TextChannel, purpose: str):
+
+        # Defer response until processing is done.
+        await ctx.defer(ephemeral=True)
+
+        # Purposes to attach to channel.
+        purposes = NOTIFICATION_TYPES
+        if purpose:
+            purposes = [purpose]
+        
+        # Insert or update a record for every purpose for this channel.
+        for p in purposes:
+            insert_or_update_channel(DATABASE, str(ctx.guild.id), str(channel.id), p)
+
+        # List all notifications in this server.
+        result = get_channel_configuration(DATABASE, str(ctx.guild.id))
+        if not result:
+            await ctx.respond(f"There are no configured notification channels for this server.")
+            await routine_after(ctx, AuditRecordType.FAILED_CONTEXT)
+            return
+
+        c_cfgs = zip(result.get('channel_id'), result.get('purpose'))
+        c_outputs = []
+        for c_id, c_purpose in c_cfgs:
+            c = ctx.guild.get_channel(int(c_id))
+            if not c:
+                delete_channel(DATABASE, str(ctx.guild.id), str(c_id), c_purpose)
+                continue
+            c_outputs.append(f"`{c_purpose}` → {c.mention}")
+
+        # Somehow there were no channels added.
+        if not c_outputs:
+            await ctx.respond(f"There are no configured notification channels for this server.")
+            await routine_after(ctx, AuditRecordType.FAILED_CONTEXT)
+            return
+        
+        # Respond to request.
+        list_separator = "\n • "
+        await ctx.respond(f"Notification configuration for this server: {list_separator}{list_separator.join(c_outputs)}")
+        await routine_after(ctx, AuditRecordType.SUCCESS)
+
+    # Set up a notification channel.
+    @guild.command(
+        name='silence',
+        description='Disable notification posts for a certain channel and purpose.',
+        options=[
+            discord.Option(discord.TextChannel, name='channel', description='Target channel.'),
+            discord.Option(str, name='purpose', description='Type of notifications to disable.', choices=NOTIFICATION_TYPES, required=False)
+        ]
+    )
+    @commands.check(CHECKS.guild_is_not_blacklisted)
+    @commands.check(CHECKS.user_has_privilege)
+    async def silence(self, ctx: discord.ApplicationContext, channel: discord.TextChannel, purpose: str):
+
+        # Defer response until processing is done.
+        await ctx.defer(ephemeral=True)
+
+        # Purposes to attach to channel.
+        purposes = NOTIFICATION_TYPES
+        if purpose:
+            purposes = [purpose]
+        
+        # Insert or update a record for every purpose for this channel.
+        for p in purposes:
+            delete_channel(DATABASE, str(ctx.guild.id), str(channel.id), p)
+
+        # List all notifications in this server.
+        result = get_channel_configuration(DATABASE, str(ctx.guild.id))
+        if not result:
+            await ctx.respond(f"There are no configured notification channels for this server.")
+            await routine_after(ctx, AuditRecordType.SUCCESS)
+            return
+
+        c_cfgs = zip(result.get('channel_id'), result.get('purpose'))
+        c_outputs = []
+        for c_id, c_purpose in c_cfgs:
+            c = ctx.guild.get_channel(int(c_id))
+            if not c:
+                delete_channel(DATABASE, str(ctx.guild.id), str(c_id), c_purpose)
+                continue
+            c_outputs.append(f"`{c_purpose}` → {c.mention}")
+
+        # Respond to request - assumes successful for now.
+        if not c_outputs:
+            await ctx.respond(f"There are no configured notification channels for this server.")
+            await routine_after(ctx, AuditRecordType.SUCCESS)
+            return
+        
+        # Respond to request.
+        list_separator = "\n • "
+        await ctx.respond(f"Notification configuration for this server: {list_separator}{list_separator.join(c_outputs)}")
+        await routine_after(ctx, AuditRecordType.SUCCESS)
+
     @grant.before_invoke
     @revoke.before_invoke
     @reset.before_invoke
@@ -326,6 +431,8 @@ class Guild(commands.Cog):
     @cmds.before_invoke
     @block.before_invoke
     @unblock.before_invoke
+    @notify.before_invoke
+    @silence.before_invoke
     async def guild_before(self, ctx: discord.ApplicationContext):
         await routine_before(ctx, self.log)
 
@@ -338,5 +445,7 @@ class Guild(commands.Cog):
     @cmds.error
     @block.error
     @unblock.error
+    @notify.error
+    @silence.error
     async def guild_error(self, ctx: discord.ApplicationContext, error):
         await routine_error(ctx, self.log, error)

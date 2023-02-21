@@ -35,6 +35,12 @@ DICT_OF_ALL_GRANTABLE_PERMISSIONS = {
     i: c for c, i in DICT_OF_ALL_GRANTABLE_COMMANDS.items() # Inverse dictionary of above.
 }
 
+# Notification types.
+NOTIFICATION_TYPES = [
+    'automation',
+    'test'
+]
+
 # Emoji information we want the bot to use.
 # These unforunately have to be hardcoded.
 EMOJIS = SimpleNamespace(**{
@@ -70,7 +76,3 @@ LEVELS = {
     4: 'Acting Founder',
     5: 'Founder'
 }
-
-WEB_RESOURCES = SimpleNamespace(**{
-    'logo': 'https://ecumene.cc/static/assets/img/ecumene.png'
-})

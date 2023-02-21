@@ -6,7 +6,8 @@ from discord.ext import commands
 from bot.core.checks import EcumeneCheck
 from bot.core.interactions import EcumeneConfirmRemoveClan
 from bot.core.routines import routine_before, routine_after, routine_error
-from bot.core.shared import DATABASE, BNET, DICT_OF_ALL_GRANTABLE_COMMANDS, WEB_RESOURCES
+from bot.core.shared import DATABASE, BNET, DICT_OF_ALL_GRANTABLE_COMMANDS
+from web.core.shared import WEB_RESOURCES
 from db.query.clans import get_all_clans_in_guild, get_clan_in_guild, delete_clan_in_guild
 from db.query.transactions import update_transaction
 from util.encrypt import generate_state

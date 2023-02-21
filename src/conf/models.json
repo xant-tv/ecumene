@@ -277,6 +277,48 @@
                 ]
             },
             {
+                "name": "channels",
+                "columns": [
+                    {
+                        "name": "channel_id",
+                        "type": "string",
+                        "size": 100
+                    },
+                    {
+                        "name": "guild_id",
+                        "type": "string",
+                        "size": 100
+                    },
+                    {
+                        "name": "purpose",
+                        "type": "string",
+                        "size": 100
+                    }
+                ],
+                "constraints": [
+                    {
+                        "name": "is_channel_purpose_unique",
+                        "type": "unique",
+                        "columns": [
+                            "channel_id",
+                            "guild_id",
+                            "purpose"
+                        ]
+                    },
+                    {
+                        "name": "guild_id_fk",
+                        "type": "foreign",
+                        "columns": [
+                            "guild_id"
+                        ],
+                        "reftable": "headers",
+                        "refcolumns": [
+                            "guild_id"
+                        ]
+                    }
+                ]
+            },
+            {
                 "name": "history",
                 "columns": [
                     {

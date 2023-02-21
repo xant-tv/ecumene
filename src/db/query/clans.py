@@ -21,6 +21,15 @@ def get_clan_in_guild(service: DatabaseService, guild_id, target_column, clan_id
     result = service.select(qry)
     return result
 
+def get_clans_from_admins(service: DatabaseService, admin_ids):
+    table = service.retrieve_model('clans')
+    qry = (
+        select(table).
+            filter(table.c.admin_id.in_(admin_ids))
+    )
+    result = service.select(qry)
+    return result
+
 def insert_clan_details(service: DatabaseService, data):
     return service.insert('clans', data)
 

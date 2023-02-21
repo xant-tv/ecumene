@@ -1,10 +1,9 @@
-from audioop import cross
 import logging
 
 from api.client import DiscordInterface, DiscordInterfaceError
 from bnet.client import BungieInterface
-from bot.core.shared import WEB_RESOURCES, EMOJIS, PLATFORMS
-from db.client import DatabaseService
+from bot.core.shared import DATABASE, EMOJIS, PLATFORMS
+from web.core.shared import WEB_RESOURCES
 from db.query.headers import get_guilds
 from db.query.transactions import get_transaction, update_transaction
 from db.query.members import insert_or_update_member
@@ -19,7 +18,7 @@ class EcumeneRouteHandler():
         self.log = logging.getLogger(f'{self.__module__}.{self.__class__.__name__}')
         self.bnet = BungieInterface()
         self.api = DiscordInterface()
-        self.db = DatabaseService()
+        self.db = DATABASE
 
     def capture_login(self, request):
         """Complete account linkage between Destiny 2 and Discord."""

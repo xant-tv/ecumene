@@ -6,7 +6,8 @@ from discord.ext import commands
 from bot.core.checks import EcumeneCheck
 from bot.core.interactions import EcumenePlatformDropdown, EcumeneSelectPlatform
 from bot.core.routines import routine_before, routine_after, routine_error
-from bot.core.shared import DATABASE, BNET, PLATFORMS, LEVELS, EMOJIS, WEB_RESOURCES
+from bot.core.shared import DATABASE, BNET, PLATFORMS, LEVELS, EMOJIS
+from web.core.shared import WEB_RESOURCES
 from db.query.clans import get_all_clans_in_guild
 from db.query.members import get_member_by_id, update_member_details
 from db.query.transactions import update_transaction

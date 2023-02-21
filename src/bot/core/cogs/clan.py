@@ -7,7 +7,8 @@ from bnet.client import BungieInterfaceError
 from bot.core.checks import EcumeneCheck
 from bot.core.interactions import EcumeneConfirm, EcumeneConfirmKick
 from bot.core.routines import routine_before, routine_after, routine_error
-from bot.core.shared import DATABASE, BNET, DICT_OF_ALL_GRANTABLE_COMMANDS, PLATFORMS, EMOJIS, WEB_RESOURCES
+from bot.core.shared import DATABASE, BNET, DICT_OF_ALL_GRANTABLE_COMMANDS, PLATFORMS, EMOJIS
+from web.core.shared import WEB_RESOURCES
 from db.query.admins import get_admin_by_id
 from db.query.clans import get_all_clans_in_guild, get_clan_in_guild
 from db.query.members import get_members_matching_by_all_ids, get_member_by_id

@@ -11,6 +11,7 @@ from bot.core.cogs.identity import Identity
 from bot.core.shared import DATABASE
 from db.query.headers import get_guild_system_role, delete_system_role, publish_system_role
 from db.query.members import get_members_matching, get_member_by_id
+from db.query.channels import delete_channel_configuration
 from util.local import get_guild_ids, get_system_role
 from util.data import chunks
 
@@ -108,6 +109,7 @@ class EcumeneBot():
         # We also can't delete the old role on rejoin because it will be above us in the permissions list.
         self.log.info('Removing system role...')
         delete_system_role(DATABASE, str(guild.id))
+        delete_channel_configuration(DATABASE, str(guild.id))
 
     async def sync_member(self, member):
         """Trigger on a new member joining any guild the bot is in."""

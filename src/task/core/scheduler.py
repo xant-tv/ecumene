@@ -2,10 +2,14 @@ import sched
 import time
 import logging
 
+from api.client import DiscordInterface, DiscordInterfaceError
 from bnet.client import BungieInterface, BungieInterfaceError
+from web.core.shared import WEB_RESOURCES
 from db.client import DatabaseService
 from db.query.admins import insert_or_update_admin, get_tokens_to_refresh, get_orphans, delete_orphans, get_dead
 from db.query.audit import get_expired_records, clean_expired_records
+from db.query.channels import get_guild_channels_by_purpose
+from db.query.clans import get_clans_from_admins
 from util.time import get_current_time
 
 TOP_PRIORITY = 1
@@ -26,6 +30,7 @@ class EcumeneScheduler():
     def __init__(self):
         self.log = logging.getLogger(f'{self.__module__}.{self.__class__.__name__}')
         self.bnet = BungieInterface()
+        self.api = DiscordInterface()
         self.db = DatabaseService(enforce_schema=True)
         self.schedule = sched.scheduler(time.time, time.sleep)
         self.initialise_schedule()
@@ -58,12 +63,14 @@ class EcumeneScheduler():
                 
                 # Naively loop these for now - shouldn't take long in practice.
                 updated = 0
+                failed = list()
                 for admin_id, refresh_token in zip(records.get('admin_id'), records.get('refresh_token')):
                     request_time = get_current_time()
                     try:
                         token_data = self.bnet.refresh_token(refresh_token)
                     except BungieInterfaceError as e:
                         self.log.error("There was an issue updating credentials!")
+                        failed.append(admin_id)
                         continue
                     admin = {
                         'admin_id': admin_id,
@@ -83,6 +90,74 @@ class EcumeneScheduler():
                     delay = TOKEN_REFRESH_URGENT_SCHEDULE
                 if updated:
                     self.log.info("Administrator credentials updated")
+
+                # Notification handling block.
+                # Check if any admin updates failed.
+                if not failed:
+                    return
+                
+                # Get respective clans for those admins, if they exist.
+                details = get_clans_from_admins(self.db, failed)
+                if not details:
+                    return
+                
+                # Unpack guild and clan information.
+                # Creates a dictionary keyed by guild containing a list of clan tuples.
+                guilds = list(set(details.get('guild_id')))
+                clans = zip(details.get('guild_id'), details.get('clan_id'), details.get('clan_name'), details.get('admin_id'))
+                failed_in_guild = dict()
+                for guild_id in guilds:
+                    failed_clans = list()
+                    for f_guild_id, f_clan_id, f_clan_name, f_admin_id in clans:
+                        f_data = f"{f_clan_name}#{f_clan_id} ({f_admin_id})"
+                        if guild_id == f_guild_id:
+                            failed_clans.append(f_data)
+                    failed_in_guild[guild_id] = failed_clans
+
+                # Loop all guilds to post relevant notifications.
+                for g_id, clan_data in failed_in_guild.items():
+                    channel_configuration = get_guild_channels_by_purpose(self.db, g_id, 'automation')
+                    channel_ids = channel_configuration.get('channel_id')
+                    if not channel_ids:
+                        # No channels to notify.
+                        continue
+                    
+                    # Message generation.
+                    list_separator = "\n"
+                    description = 'High-priority transmission!'
+                    description += '\n\nFailed to update administrator credentials for the following clans managed in this server.'
+                    description += '\n\nAuthorisation via `/admin register` may be required.'
+                    field_info = f"{list_separator.join(clan_data)}"
+                    content = {
+                        'embeds': [
+                            {
+                                'title': 'Ecumene Automation — Notify',
+                                'description': description,
+                                'fields': [
+                                    {
+                                        'name': 'Payload',
+                                        'value': field_info,
+                                        'inline': False
+                                    }
+                                ],
+                                'footer': {
+                                    'text': 'ecumene.cc',
+                                    'icon_url': WEB_RESOURCES.logo
+                                },
+                                'thumbnail': {
+                                    'url': WEB_RESOURCES.logo
+                                }
+                            }
+                        ]
+                    }
+
+                    # If notifications are enabled, we want to post into respective channels.
+                    for channel_id in channel_ids:
+                        try:
+                            self.api.create_message(channel_id, content)
+                        except DiscordInterfaceError:
+                            self.log.warn(f"Notification to {channel_id} unsuccessful")
+                            continue
 
         # If something goes wrong, log and reschedule again.
         except Exception as e:
