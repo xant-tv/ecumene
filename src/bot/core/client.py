@@ -7,7 +7,6 @@ from bot.core.cogs.audit import Audit
 from bot.core.cogs.clan import Clan
 from bot.core.cogs.guild import Guild
 from bot.core.cogs.identity import Identity
-from bot.core.cogs.example import Example
 
 from bot.core.shared import DATABASE
 from db.query.headers import get_guild_system_role, delete_system_role, publish_system_role
@@ -36,7 +35,6 @@ class EcumeneBot():
         self.client.add_cog(Admin(self.log))
         self.client.add_cog(Identity(self.log))
         self.client.add_cog(Clan(self.log))
-        # self.client.add_cog(Example(self.log))
 
         # Add our on-ready event listener.
         self.client.add_listener(

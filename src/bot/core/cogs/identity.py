@@ -33,6 +33,7 @@ class Identity(commands.Cog):
         name='register', 
         description="Begin negotiations with Ecumene."
     )
+    @commands.check(CHECKS.guild_is_not_blacklisted)
     async def register(self, ctx: discord.ApplicationContext):
         """Register with Ecumene leadership."""
 
@@ -105,6 +106,7 @@ class Identity(commands.Cog):
             discord.Option(discord.Member, name='user', description='User to inspect.', required=False)
         ]
     )
+    @commands.check(CHECKS.guild_is_not_blacklisted)
     async def inspect(self, ctx: discord.ApplicationContext, user: discord.Member):
 
         # Defer response until processing is done.
@@ -311,6 +313,7 @@ class Identity(commands.Cog):
         name='profile', 
         description="Set your primary profile."
     )
+    @commands.check(CHECKS.guild_is_not_blacklisted)
     async def profile(self, ctx: discord.ApplicationContext):
 
         # Defer response until processing is done.

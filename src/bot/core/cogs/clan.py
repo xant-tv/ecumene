@@ -50,6 +50,7 @@ class Clan(commands.Cog):
             discord.Option(str, name='filter', description='Filter members based on criteria.', choices=['All', FILTER_INACTIVE])
         ]
     )
+    @commands.check(CHECKS.guild_is_not_blacklisted)
     @commands.check(CHECKS.user_has_privilege)
     async def members(self, ctx: discord.ApplicationContext, filter: str):
         
@@ -192,6 +193,7 @@ class Clan(commands.Cog):
             discord.Option(discord.Member, name='user', description='User to kick from clan.')
         ]
     )
+    @commands.check(CHECKS.guild_is_not_blacklisted)
     @commands.check(CHECKS.user_has_privilege)
     async def kick(self, ctx: discord.ApplicationContext, user: discord.Member):
         
@@ -315,6 +317,7 @@ class Clan(commands.Cog):
             discord.Option(str, name='rank', description='Rank within the clan.', choices=['Member', 'Admin'])
         ]
     )
+    @commands.check(CHECKS.guild_is_not_blacklisted)
     @commands.check(CHECKS.user_has_privilege)
     async def rank(self, ctx: discord.ApplicationContext, user: discord.Member, rank: str):
 
@@ -449,6 +452,7 @@ class Clan(commands.Cog):
             discord.Option(discord.Role, name='clan', description='Clan you wish to inspect.')
         ]
     )
+    @commands.check(CHECKS.guild_is_not_blacklisted)
     @commands.check(CHECKS.user_has_privilege)
     async def status(self, ctx: discord.ApplicationContext, clan: discord.Role):
 
@@ -546,6 +550,7 @@ class Clan(commands.Cog):
             discord.Option(discord.Role, name='clan', description='Clan relevant to this interaction.')
         ]
     )
+    @commands.check(CHECKS.guild_is_not_blacklisted)
     @commands.check(CHECKS.user_has_privilege)
     async def invite(self, ctx: discord.ApplicationContext, method: str, user: discord.Member, clan: discord.Role):
 
@@ -627,6 +632,7 @@ class Clan(commands.Cog):
             discord.Option(discord.Role, name='clan', description='Clan relevant to this interaction.')
         ]
     )
+    @commands.check(CHECKS.guild_is_not_blacklisted)
     @commands.check(CHECKS.user_has_privilege)
     async def request(self, ctx: discord.ApplicationContext, method: str, user: discord.Member, clan: discord.Role):
         
@@ -708,6 +714,7 @@ class Clan(commands.Cog):
             discord.Option(discord.Role, name='clan', description='Clan you wish to interact with.', required=False)
         ]
     )
+    @commands.check(CHECKS.guild_is_not_blacklisted)
     @commands.check(CHECKS.user_has_privilege)
     async def action(self, ctx: discord.ApplicationContext, method: str, user: str, clan: discord.Role):
 
@@ -945,6 +952,7 @@ class Clan(commands.Cog):
             discord.Option(discord.Role, name='clan', description='Clan you wish to join.')
         ]
     )
+    @commands.check(CHECKS.guild_is_not_blacklisted)
     @commands.check(CHECKS.user_is_not_blacklisted)
     @commands.check(CHECKS.user_has_privilege)
     async def join(self, ctx: discord.ApplicationContext, clan: discord.Role):

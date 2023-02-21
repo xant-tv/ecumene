@@ -61,6 +61,7 @@ class Guild(commands.Cog):
             discord.Option(str, name='command', description='Command to grant permissions for.', choices=sorted(DICT_OF_ALL_GRANTABLE_COMMANDS.keys()))
         ]
     )
+    @commands.check(CHECKS.guild_is_not_blacklisted)
     @commands.check(CHECKS.user_has_privilege)
     async def grant(self, ctx: discord.ApplicationContext, role: discord.Role, command: str):
 
@@ -96,6 +97,7 @@ class Guild(commands.Cog):
             discord.Option(str, name='command', description='Command to revoke access to.', choices=sorted(DICT_OF_ALL_GRANTABLE_COMMANDS.keys()))
         ]
     )
+    @commands.check(CHECKS.guild_is_not_blacklisted)
     @commands.check(CHECKS.user_has_privilege)
     async def revoke(self, ctx: discord.ApplicationContext, role: discord.Role, command: str):
 
@@ -130,6 +132,7 @@ class Guild(commands.Cog):
             discord.Option(discord.Role, name='role', description="Role to clear permissions from.")
         ]
     )
+    @commands.check(CHECKS.guild_is_not_blacklisted)
     @commands.check(CHECKS.user_has_privilege)
     async def clear_role(self, ctx: discord.ApplicationContext, role: discord.Role):
 
@@ -149,6 +152,7 @@ class Guild(commands.Cog):
             discord.Option(str, name='command', description="Command to clear permissions from.", choices=sorted(DICT_OF_ALL_GRANTABLE_COMMANDS.keys()))
         ]
     )
+    @commands.check(CHECKS.guild_is_not_blacklisted)
     @commands.check(CHECKS.user_has_privilege)
     async def clear_command(self, ctx: discord.ApplicationContext, command: str):
 
@@ -166,6 +170,7 @@ class Guild(commands.Cog):
         name='all', 
         description="Reset all configured permissions for the entire server."
     )
+    @commands.check(CHECKS.guild_is_not_blacklisted)
     @commands.check(CHECKS.user_has_privilege)
     async def reset(self, ctx: discord.ApplicationContext):
 
@@ -185,6 +190,7 @@ class Guild(commands.Cog):
             discord.Option(str, name='command', description='Command to list role permissions for.', choices=sorted(DICT_OF_ALL_GRANTABLE_COMMANDS.keys()))
         ]
     )
+    @commands.check(CHECKS.guild_is_not_blacklisted)
     @commands.check(CHECKS.user_has_privilege)
     async def roles(self, ctx: discord.ApplicationContext, command: str):
 
@@ -222,6 +228,7 @@ class Guild(commands.Cog):
             discord.Option(discord.Role, name='role', description='Role to list command permissions for.')
         ]
     )
+    @commands.check(CHECKS.guild_is_not_blacklisted)
     @commands.check(CHECKS.user_has_privilege)
     async def cmds(self, ctx: discord.ApplicationContext, role: discord.Role):
         
@@ -252,6 +259,7 @@ class Guild(commands.Cog):
             discord.Option(discord.Member, name='user', description='User to block.')
         ]
     )
+    @commands.check(CHECKS.guild_is_not_blacklisted)
     @commands.check(CHECKS.user_has_privilege)
     async def block(self, ctx: discord.ApplicationContext, user: discord.Member):
 
@@ -290,6 +298,7 @@ class Guild(commands.Cog):
             discord.Option(discord.Member, name='user', description='User to unblock.')
         ]
     )
+    @commands.check(CHECKS.guild_is_not_blacklisted)
     @commands.check(CHECKS.user_has_privilege)
     async def unblock(self, ctx: discord.ApplicationContext, user: discord.Member): 
 

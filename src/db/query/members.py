@@ -113,3 +113,20 @@ def remove_user_from_blacklist(service: DatabaseService, guild_id, user_id):
     )
     result = service.execute(qry)
     return result
+
+def add_guild_to_blacklist(service: DatabaseService, guild_id):
+    data = {
+        'guild_id': guild_id,
+        'discord_id': '0'
+    }
+    return service.insert('blacklist', data)
+
+def remove_guild_from_blacklist(service: DatabaseService, guild_id):
+    table = service.retrieve_model('blacklist')
+    qry = (
+        delete(table).
+            where(table.c.guild_id == guild_id).
+            where(table.c.discord_id == '0')
+    )
+    result = service.execute(qry)
+    return result

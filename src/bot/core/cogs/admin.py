@@ -44,6 +44,7 @@ class Admin(commands.Cog):
             discord.Option(discord.Role, name='role', description='Role to attach to this clan.')
         ]
     )
+    @commands.check(CHECKS.guild_is_not_blacklisted)
     @commands.check(CHECKS.user_has_privilege)
     async def register(self, ctx: discord.ApplicationContext, clan: str, role: discord.Role):
 
@@ -117,6 +118,7 @@ class Admin(commands.Cog):
             discord.Option(str, name='clan', description='Group identifier for the clan you wish to deregister.')
         ]
     )
+    @commands.check(CHECKS.guild_is_not_blacklisted)
     @commands.check(CHECKS.user_has_privilege)
     async def deregister(self, ctx: discord.ApplicationContext, clan: str):
 
@@ -163,6 +165,7 @@ class Admin(commands.Cog):
         name='list',
         description='List all clans registered with Ecumene in this server.',
     )
+    @commands.check(CHECKS.guild_is_not_blacklisted)
     @commands.check(CHECKS.user_has_privilege)
     async def clans(self, ctx: discord.ApplicationContext):
 

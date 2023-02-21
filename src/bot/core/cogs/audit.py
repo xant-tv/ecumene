@@ -50,6 +50,7 @@ class Audit(commands.Cog):
             discord.Option(str, name='period', description='Time period to query for audit logs.', choices=AUDIT_TIME_PERIODS.keys())
         ]
     )
+    @commands.check(CHECKS.guild_is_not_blacklisted)
     @commands.check(CHECKS.user_has_privilege)
     async def period(self, ctx: discord.ApplicationContext, period: str):
         
@@ -90,6 +91,7 @@ class Audit(commands.Cog):
             discord.Option(str, name='command', description='Specific command to query for audit logs.', choices=sorted(DICT_OF_ALL_COMMAND_GROUPS.keys()))
         ]
     )
+    @commands.check(CHECKS.guild_is_not_blacklisted)
     @commands.check(CHECKS.user_has_privilege)
     async def cmd(self, ctx: discord.ApplicationContext, period: str, command: str):
         
@@ -131,6 +133,7 @@ class Audit(commands.Cog):
             discord.Option(discord.User, name='user', description='Specific user to query for audit logs.')
         ]
     )
+    @commands.check(CHECKS.guild_is_not_blacklisted)
     @commands.check(CHECKS.user_has_privilege)
     async def user(self, ctx: discord.ApplicationContext, period: str, user: discord.User):
         
@@ -172,6 +175,7 @@ class Audit(commands.Cog):
             discord.Option(discord.User, name='target', description='Specific target to query for audit logs.')
         ]
     )
+    @commands.check(CHECKS.guild_is_not_blacklisted)
     @commands.check(CHECKS.user_has_privilege)
     async def target(self, ctx: discord.ApplicationContext, period: str, target: discord.User):
         

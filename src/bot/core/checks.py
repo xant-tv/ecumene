@@ -95,4 +95,11 @@ class EcumeneCheck():
         blacklisted = check_blacklist(DATABASE, ctx.guild.id, ctx.author.id)
         if blacklisted:
             return False
-        return True 
+        return True
+    
+    def guild_is_not_blacklisted(self, ctx):
+        self.log.info(f'Check guild_is_not_blacklisted() invoked')
+        blacklisted = check_blacklist(DATABASE, ctx.guild.id, '0')
+        if blacklisted:
+            return False
+        return True
