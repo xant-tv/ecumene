@@ -9,10 +9,6 @@ from util.enum import TransactionType
 ecumene = EcumeneWeb()
 client = ecumene.client
 
-# TODO: Implement background tasks.
-#       - Admin token freshness.
-#       - Channel-based notifications (requires moving channels.json into database). Maybe front-end command?
-
 # TODO: Workflow logic.
 #       - Member update rather than insert.
 #       - Admin storage equivalent.

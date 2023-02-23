@@ -2,14 +2,12 @@ import sched
 import time
 import logging
 
-from api.client import DiscordInterface, DiscordInterfaceError
+from api.client import DiscordInterface
 from bnet.client import BungieInterface, BungieInterfaceError
-from web.core.shared import WEB_RESOURCES
 from db.client import DatabaseService
 from db.query.admins import insert_or_update_admin, get_tokens_to_refresh, get_orphans, delete_orphans, get_dead
 from db.query.audit import get_expired_records, clean_expired_records
-from db.query.channels import get_guild_channels_by_purpose
-from db.query.clans import get_clans_from_admins
+from task.core.notifier import EcumeneNotifier
 from util.time import get_current_time
 
 TOP_PRIORITY = 1
@@ -25,6 +23,9 @@ CLEAN_AUDIT_SCHEDULE = 24*60*60
 AUDIT_TIMEOUT_BUFFER = 15*60
 TOKEN_PROCESSING_BUFFER = 5*60
 
+STATUS_FAILURE = 0
+STATUS_SUCCESS = 10
+
 class EcumeneScheduler():
 
     def __init__(self):
@@ -32,6 +33,7 @@ class EcumeneScheduler():
         self.bnet = BungieInterface()
         self.api = DiscordInterface()
         self.db = DatabaseService(enforce_schema=True)
+        self.notify = EcumeneNotifier(self.db, self.api)
         self.schedule = sched.scheduler(time.time, time.sleep)
         self.initialise_schedule()
 
@@ -91,73 +93,8 @@ class EcumeneScheduler():
                 if updated:
                     self.log.info("Administrator credentials updated")
 
-                # Notification handling block.
-                # Check if any admin updates failed.
-                if not failed:
-                    return
-                
-                # Get respective clans for those admins, if they exist.
-                details = get_clans_from_admins(self.db, failed)
-                if not details:
-                    return
-                
-                # Unpack guild and clan information.
-                # Creates a dictionary keyed by guild containing a list of clan tuples.
-                guilds = list(set(details.get('guild_id')))
-                clans = zip(details.get('guild_id'), details.get('clan_id'), details.get('clan_name'), details.get('admin_id'))
-                failed_in_guild = dict()
-                for guild_id in guilds:
-                    failed_clans = list()
-                    for f_guild_id, f_clan_id, f_clan_name, f_admin_id in clans:
-                        f_data = f"{f_clan_name}#{f_clan_id} ({f_admin_id})"
-                        if guild_id == f_guild_id:
-                            failed_clans.append(f_data)
-                    failed_in_guild[guild_id] = failed_clans
-
-                # Loop all guilds to post relevant notifications.
-                for g_id, clan_data in failed_in_guild.items():
-                    channel_configuration = get_guild_channels_by_purpose(self.db, g_id, 'automation')
-                    channel_ids = channel_configuration.get('channel_id')
-                    if not channel_ids:
-                        # No channels to notify.
-                        continue
-                    
-                    # Message generation.
-                    list_separator = "\n"
-                    description = 'High-priority transmission!'
-                    description += '\n\nFailed to update administrator credentials for the following clans managed in this server.'
-                    description += '\n\nAuthorisation via `/admin register` may be required.'
-                    field_info = f"{list_separator.join(clan_data)}"
-                    content = {
-                        'embeds': [
-                            {
-                                'title': 'Ecumene Automation — Notify',
-                                'description': description,
-                                'fields': [
-                                    {
-                                        'name': 'Payload',
-                                        'value': field_info,
-                                        'inline': False
-                                    }
-                                ],
-                                'footer': {
-                                    'text': 'ecumene.cc',
-                                    'icon_url': WEB_RESOURCES.logo
-                                },
-                                'thumbnail': {
-                                    'url': WEB_RESOURCES.logo
-                                }
-                            }
-                        ]
-                    }
-
-                    # If notifications are enabled, we want to post into respective channels.
-                    for channel_id in channel_ids:
-                        try:
-                            self.api.create_message(channel_id, content)
-                        except DiscordInterfaceError:
-                            self.log.warn(f"Notification to {channel_id} unsuccessful")
-                            continue
+                # Notify as needed.
+                self.notify.refresh_tokens_failed(failed)
 
         # If something goes wrong, log and reschedule again.
         except Exception as e:
@@ -171,6 +108,7 @@ class EcumeneScheduler():
             TOP_PRIORITY, 
             self.refresh_tokens
         )
+        return STATUS_SUCCESS
 
     def clean_admin_cache(self, delay=CLEAN_ADMIN_SCHEDULE):
         """Remove cached administrator tokens that are no longer referenced."""
@@ -205,6 +143,7 @@ class EcumeneScheduler():
             LOW_PRIORITY, 
             self.clean_admin_cache
         )
+        return STATUS_SUCCESS
 
     def time_out_pending_audit(self, delay=CLEAN_AUDIT_SCHEDULE):
         """Clean up any audit records that have clearly timed out."""
@@ -230,3 +169,4 @@ class EcumeneScheduler():
             NO_PRIORITY,
             self.time_out_pending_audit
         )
+        return STATUS_SUCCESS

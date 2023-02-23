@@ -37,8 +37,7 @@ DICT_OF_ALL_GRANTABLE_PERMISSIONS = {
 
 # Notification types.
 NOTIFICATION_TYPES = [
-    'automation',
-    'test'
+    'automation'
 ]
 
 # Emoji information we want the bot to use.
