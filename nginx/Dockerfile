@@ -2,7 +2,7 @@
 # NGINX
 # Configure web server
 # ======
-FROM nginx:1.21-alpine
+FROM nginx:1.23-alpine
 
 # Create certification location
 # Certs will probably have to be individually mounted here

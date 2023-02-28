@@ -2,15 +2,14 @@
 # CLIENT
 # Install necessary Oracle dependencies
 # ======
-FROM ubuntu:18.04 AS client
+FROM alpine:latest AS client
 
 ENV ORACLE_ZIP_INTERNAL_FOLDER=instantclient_21_5
 ENV CLIENT_ZIP=oracleinstantclient.zip
 
 # Oracle client dependencies
 WORKDIR /root
-RUN apt-get update && apt-get -yq install unzip wget
-RUN wget -O oracleinstantclient.zip https://download.oracle.com/otn_software/linux/instantclient/215000/instantclient-basic-linux.x64-21.5.0.0.0dbru.zip
+RUN wget -O ${CLIENT_ZIP} https://download.oracle.com/otn_software/linux/instantclient/215000/instantclient-basic-linux.x64-21.5.0.0.0dbru.zip
 RUN unzip ${CLIENT_ZIP}
 RUN mv ${ORACLE_ZIP_INTERNAL_FOLDER} oracle
 
