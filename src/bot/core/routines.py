@@ -30,4 +30,10 @@ async def routine_error(ctx: discord.ApplicationContext, log, error):
     # This will occur after @before_invoke is called.
     # We can call the custom @after_invoke with our own error.
     await routine_after(ctx, AuditRecordType.FAILED_ERROR)
+    if isinstance(error, discord.Forbidden):
+        # This error is reached usually when the bot tries something it hasn't been given permissions to do.
+        # The next person who sees this error and posts it first instead of opening their messages gets banned.
+        await ctx.respond("Forbidden. Your direct messages are probably closed.")
+        return
+    # Generic unhandled exception goes here.
     await ctx.respond("An error occurred. Please don't yell at the developer!")

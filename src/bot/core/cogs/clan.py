@@ -173,6 +173,10 @@ class Clan(commands.Cog):
             'last_online_rel_str',
             'status'
         ]
+        # Filthy hack to make sure columns are always in the output.
+        for col in output_cols:
+            if col not in members.columns:
+                members[col] = EMPTY
         output = members.loc[:, output_cols]
 
         # Temporarily store this file locally.

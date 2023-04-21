@@ -213,9 +213,15 @@ class Guild(commands.Cog):
         roles = list()
         for role_id in role_ids:
             role_obj = ctx.guild.get_role(int(role_id))
+            if not role_obj:
+                continue
             roles.append(role_obj.mention)
         roles = sorted(roles)
-        
+        if not roles:
+            await ctx.respond(f'No non-admin permitted roles found for `{command}`.')
+            await routine_after(ctx, AuditRecordType.SUCCESS)
+            return
+
         # Print roles that are able to run command.
         list_separator = "\n • "
         await ctx.respond(f"Non-admin roles with access to `{command}`: {list_separator}{list_separator.join(roles)}")
